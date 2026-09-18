@@ -1,1 +1,8 @@
 Library/
+
+# Unity
+/[Ll]ogs/
+/[Tt]emp/
+/[Uu]ser[Ss]ettings/
+/[Ll]ibrary/
+/[Oo]bj/
