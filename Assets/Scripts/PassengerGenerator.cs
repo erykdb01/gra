@@ -1,13 +1,13 @@
 using UnityEngine;
 
-// Statyczny generator: tworzy losowego pasażera z potrzebną "prawdą".
-// Nazwiska są dopasowane do płci (Kamiński / Kamińska).
+// Static generator: creates a random passenger with the requested hidden truth.
+// Surnames match gender (Kamiński / Kamińska).
 public static class PassengerGenerator
 {
     static readonly string[] maleNames   = { "Jan", "Piotr", "Tadeusz", "Stanisław", "Marek", "Andrzej", "Henryk", "Zbigniew" };
     static readonly string[] femaleNames = { "Maria", "Anna", "Krystyna", "Ewa", "Halina", "Barbara", "Zofia", "Irena" };
 
-    // {męskie, żeńskie}
+    // {male, female}
     static readonly string[][] surnames =
     {
         new[] { "Kowalski",    "Kowalska"    },
@@ -40,38 +40,38 @@ public static class PassengerGenerator
         p.ticketText = $"{Pick(cities)} → Stacja {Random.Range(1, 13)}\n" +
                        $"Wagon: {Random.Range(1, 8)}  Miejsce: {Random.Range(1, 60)}";
 
-        // Bazowo wszystko jest zgodne (czysty żywy pasażer).
+        // By default everything matches (a clean, living passenger).
         p.idCard       = new Record { fullName = name, birthDate = birth, status = "WAŻNY",   extra = "zam. " + Pick(cities) };
         p.railDatabase = new Record { fullName = name, birthDate = birth, status = "AKTYWNY", extra = "ostatnia podróż: " + Random.Range(2015, 2026) };
         p.registry     = new Record { fullName = name, birthDate = birth, status = "ŻYJE",    extra = "" };
-        p.debugHint    = "brak niezgodności";
+        p.debugHint    = "no discrepancies";
 
         switch (truth)
         {
             case PassengerTruth.Dead:
-                // Rejestr mówi, że człowiek nie żyje, chociaż stoi przed tobą.
+                // The registry says the person is dead, even though they stand in front of you.
                 int deathYear = Random.Range(year + 20, 2010);
                 p.registry.status = "ZMARŁ";
                 p.registry.extra  = $"data: {Random.Range(1, 29):00}.{Random.Range(1, 13):00}.{deathYear}";
                 p.railDatabase.status = "NIEAKTYWNY";
                 p.railDatabase.extra  = "ostatnia podróż: " + deathYear;
-                p.debugHint = "rejestr: zmarł w " + deathYear;
+                p.debugHint = "registry: died in " + deathYear;
                 break;
 
             case PassengerTruth.NonExistent:
-                // Drobna rozbieżność: rok urodzenia w bazie różni się o 1,
-                // a rodzice w rejestrze "zmarli" przed urodzeniem.
+                // Subtle discrepancy: birth year in the database differs by 1,
+                // and the registry says the parents died before the birth.
                 p.railDatabase.birthDate = $"{day:00}.{month:00}.{year + 1}";
                 p.registry.birthDate     = $"{day:00}.{month:00}.{year + 1}";
                 p.registry.extra         = $"rodzice zmarli: {year}";
-                p.debugHint = "data urodzenia w bazie różni się o rok, rodzice zmarli przed urodzeniem";
+                p.debugHint = "birth date in database differs by a year, parents died before the birth";
                 break;
         }
 
         return p;
     }
 
-    // Losowa "prawda" z wagami: 60% żywi, 25% martwi, 15% nieistniejący.
+    // Random "truth" with weights: 60% alive, 25% dead, 15% non-existent.
     public static PassengerTruth RandomTruth()
     {
         float r = Random.value;

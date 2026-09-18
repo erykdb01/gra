@@ -1,12 +1,12 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-// "Mózg" gry: trzyma bieżącego pasażera, przyjmuje decyzje, liczy wynik.
+// Game "brain": holds the current passenger, takes decisions, keeps score.
 public class GameManager : MonoBehaviour
 {
-    public UIController ui;                 // przeciągnij obiekt UI
+    public UIController ui;                 // drag the UI object here
     public int passengersPerShift = 10;
-    public GameObject menuButton;           // przycisk MENU, widoczny dopiero po końcu zmiany
+    public GameObject menuButton;           // MENU button, only visible after the shift ends
 
     PassengerData current;
     int served;
@@ -35,12 +35,12 @@ public class GameManager : MonoBehaviour
         ui.ShowScore(correct, mistakes, served, passengersPerShift);
     }
 
-    // admit = true -> WPUŚĆ, false -> ODMÓW.
+    // admit = true -> ADMIT, false -> DENY.
     public void Decide(bool admit)
     {
         if (finished) return;
 
-        // Zasada dnia 1: wpuszczamy tylko żywych.
+        // Day 1 rule: only living passengers are admitted.
         bool shouldAdmit = current.truth == PassengerTruth.Alive;
         bool ok = admit == shouldAdmit;
 
@@ -54,7 +54,7 @@ public class GameManager : MonoBehaviour
         NextPassenger();
     }
 
-    // Funkcje do podpięcia pod przyciski (On Click).
+    // Methods to hook up to the buttons (On Click).
     public void Admit() => Decide(true);
     public void Deny()  => Decide(false);
 

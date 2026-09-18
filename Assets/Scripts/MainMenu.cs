@@ -3,19 +3,19 @@ using UnityEngine.SceneManagement;
 
 public class MainMenu : MonoBehaviour
 {
-    public void Graj()
-{
-    SceneManager.LoadScene("Peron");
-}
-
-    public void Opcje()
+    public void Play()
     {
-        Debug.Log("Kliknięto OPCJE");
+        SceneManager.LoadScene("Peron");
     }
 
-    public void Wyjdz()
+    public void Options()
     {
-        Debug.Log("Wyjście z gry");
+        Debug.Log("Options clicked");
+    }
+
+    public void Quit()
+    {
+        Debug.Log("Quitting game");
         Application.Quit();
     }
 }

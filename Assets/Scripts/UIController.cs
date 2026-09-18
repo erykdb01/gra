@@ -1,19 +1,19 @@
 using TMPro;
 using UnityEngine;
 
-// Pokazuje dane pasażera w czterech panelach na biurku,
-// wynik na górze oraz informację zwrotną po każdej decyzji.
+// Shows passenger data in the four desk panels,
+// the score at the top and feedback after each decision.
 public class UIController : MonoBehaviour
 {
-    [Header("Dokumenty (4 panele na biurku)")]
-    public TMP_Text ticketText;    // Bilet
-    public TMP_Text idText;        // Dowód
-    public TMP_Text railDbText;    // Baza kolejowa
-    public TMP_Text registryText;  // Rejestr
+    [Header("Documents (4 panels on the desk)")]
+    public TMP_Text ticketText;    // ticket
+    public TMP_Text idText;        // ID card
+    public TMP_Text railDbText;    // railway database
+    public TMP_Text registryText;  // registry
 
-    [Header("Wynik i komunikaty")]
-    public TMP_Text scoreText;     // licznik (lewy górny róg)
-    public TMP_Text messageText;   // komunikat (środek u góry)
+    [Header("Score and messages")]
+    public TMP_Text scoreText;     // counter (top left)
+    public TMP_Text messageText;   // message (top center)
 
     void Awake()
     {
@@ -35,7 +35,7 @@ public class UIController : MonoBehaviour
             scoreText.text = $"Pasażer {served + 1}/{total}    Dobrze: {correct}    Błędy: {mistakes}";
     }
 
-    // Krótka informacja po decyzji: dobrze czy źle i kim naprawdę był pasażer.
+    // Short feedback after a decision: right or wrong, and who the passenger really was.
     public void ShowFeedback(bool ok, PassengerTruth truth)
     {
         if (messageText == null) return;
