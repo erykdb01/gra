@@ -1,8 +1,7 @@
 using TMPro;
 using UnityEngine;
 
-// Shows passenger data in the four desk panels,
-// the score at the top and feedback after each decision.
+// Shows passenger data in the four desk panels plus the score line and the message line.
 public class UIController : MonoBehaviour
 {
     [Header("Documents (4 panels on the desk)")]
@@ -17,62 +16,81 @@ public class UIController : MonoBehaviour
 
     void Awake()
     {
-        if (messageText != null) messageText.text = "";
-        if (scoreText != null) scoreText.text = "";
+        SetMessage("");
+        SetScore("");
+    }
+
+    // Dark ink on paper, auto-sizing text, readable score/message lines.
+    public void ApplyStyle()
+    {
+        TMP_Text[] docs = { ticketText, idText, railDbText, registryText };
+        foreach (TMP_Text t in docs)
+        {
+            if (t == null) continue;
+            t.color = UIKit.Ink;
+            t.enableAutoSizing = true;
+            t.fontSizeMin = 18;
+            t.fontSizeMax = 34;
+            t.textWrappingMode = TextWrappingModes.Normal;
+            t.alignment = TextAlignmentOptions.TopLeft;
+        }
+        if (idText != null) idText.margin = new Vector4(0, 0, 124, 0);   // room for the photo
+        if (scoreText != null)
+        {
+            scoreText.fontSize = 30;
+            scoreText.textWrappingMode = TextWrappingModes.NoWrap;
+        }
+        if (messageText != null)
+        {
+            messageText.fontSize = 34;
+            messageText.textWrappingMode = TextWrappingModes.Normal;
+        }
     }
 
     public void ShowPassenger(PassengerData p)
     {
-        ticketText.text   = "BILET\n" + p.ticketText + "\n" + p.idCard.fullName;
-        idText.text       = Format("DOWÓD", p.idCard);
-        railDbText.text   = Format("BAZA KOLEJOWA", p.railDatabase);
-        registryText.text = Format("REJESTR", p.registry);
+        ticketText.text   = Desk(p, DocumentType.Ticket);
+        idText.text       = Desk(p, DocumentType.Id);
+        railDbText.text   = Desk(p, DocumentType.RailDatabase);
+        registryText.text = Desk(p, DocumentType.Registry);
     }
 
-    public void ShowScore(int correct, int mistakes, int served, int total)
+    static string Desk(PassengerData p, DocumentType t)
     {
-        if (scoreText != null)
-            scoreText.text = $"Pasażer {served + 1}/{total}    Dobrze: {correct}    Błędy: {mistakes}";
+        DocumentData d = DocumentSystem.Get(p, t);
+        return d == null ? "" : DocumentSystem.DeskText(d);
     }
 
-    // Short feedback after a decision: right or wrong, and who the passenger really was.
-    public void ShowFeedback(bool ok, PassengerTruth truth)
-    {
-        if (messageText == null) return;
-
-        if (ok)
-            messageText.text = "<color=#7FD08A>Dobra decyzja.</color>";
-        else
-            messageText.text = "<color=#E07070>Błąd. To był pasażer: " + TruthName(truth) + ".</color>";
-    }
-
-    public void ShowShiftEnd(int correct, int mistakes)
+    public void ClearDocuments()
     {
         ticketText.text = "";
         idText.text = "";
         railDbText.text = "";
         registryText.text = "";
-
-        if (scoreText != null) scoreText.text = "";
-        if (messageText != null)
-            messageText.text = $"Koniec zmiany.  Dobrze: {correct}   Błędy: {mistakes}";
     }
 
-    static string TruthName(PassengerTruth t)
+    public void SetScore(string s)
+    {
+        if (scoreText != null) scoreText.text = s;
+    }
+
+    public void SetMessage(string s)
+    {
+        if (messageText != null) messageText.text = s;
+    }
+
+    public static string TruthName(PassengerTruth t)
     {
         switch (t)
         {
-            case PassengerTruth.Alive:       return "żywy";
-            case PassengerTruth.Dead:        return "zmarły";
-            case PassengerTruth.NonExistent: return "nieistniejący";
-            default:                         return "";
+            case PassengerTruth.Alive:       return Loc.T("żywy", "alive");
+            case PassengerTruth.Dead:        return Loc.T("zmarły", "dead");
+            case PassengerTruth.NonExistent: return Loc.T("nieistniejący", "non-existent");
+            case PassengerTruth.Altered:     return Loc.T("zmieniony", "altered");
+            case PassengerTruth.Loop:        return Loc.T("pętla", "loop");
+            case PassengerTruth.Impostor:    return Loc.T("podszywacz", "impostor");
+            case PassengerTruth.Echo:        return Loc.T("echo", "echo");
+            default:                         return Loc.T("nieznany", "unknown");
         }
-    }
-
-    static string Format(string title, Record r)
-    {
-        string s = $"{title}\n{r.fullName}\nur. {r.birthDate}\nstatus: {r.status}";
-        if (!string.IsNullOrEmpty(r.extra)) s += "\n" + r.extra;
-        return s;
     }
 }

@@ -1,64 +1,64 @@
 # OSTATNI PERON
 
-Gra 2D w stylu pixel-art, inspirowana *Papers, Please* i *Death and Taxes*.
-Jesteś konduktorem nocnego pociągu **Linia 13**. Zanim pasażer wsiądzie, sprawdzasz jego dokumenty i decydujesz: wpuścić czy odmówić.
+2D pixel-art game in the style of *Papers, Please* / *Death and Taxes*.
+You are a conductor on the night train **Linia 13**. Before each passenger boards, you check their documents and decide: admit or deny.
 
-**Status:** wczesny prototyp (wersja z 19 września 2026, 01:52). Nie ma jeszcze docelowej grafiki ani dźwięku.
+**Status:** early prototype (version of 19 September 2026, 01:52). No final graphics or audio yet.
 
-## Wymagania
+## Requirements
 
 - Unity 6 (6000.6.0f1)
 - Universal Render Pipeline (2D)
 - TextMeshPro, Input System
 
-## Jak uruchomić
+## How to run
 
-1. Otwórz folder projektu w Unity Hub.
-2. Otwórz scenę `MainMenu` (Assets/Scenes) i naciśnij Play.
-3. Obie sceny muszą być na liście w Build Profiles: `MainMenu` (indeks 0) i `Peron` (indeks 1).
+1. Open the project folder in Unity Hub.
+2. Open the `MainMenu` scene (Assets/Scenes) and press Play.
+3. Both scenes (`MainMenu` at index 0, `Peron` at index 1) must be in the Build Profiles scene list.
 
-## Rozgrywka (obecny prototyp)
+## Gameplay (current prototype)
 
-Zmiana to 10 pasażerów. Przy każdym widzisz cztery panele na biurku: **bilet**, **dowód**, **bazę kolejową** i **rejestr**. W tych źródłach mogą być drobne różnice w imieniu, dacie urodzenia lub statusie.
+A shift is 10 passengers. For each one you see four panels on the desk: **ticket**, **ID card**, **railway database** and **registry**. The sources may contain small discrepancies in name, birth date or status.
 
-- **WPUŚĆ** – wpuszczasz pasażera
-- **ODMÓW** – odmawiasz pasażerowi
+- **WPUŚĆ** - admit the passenger
+- **ODMÓW** - deny the passenger
 
-Ukryta prawda o pasażerze (gra jej nie pokazuje):
+Hidden truth about each passenger (never shown up front):
 
-| Prawda | Szansa | Znaczenie |
+| Truth | Chance | Meaning |
 |---|---|---|
-| Żywy | 60% | wszystkie dokumenty się zgadzają |
-| Zmarły | 25% | rejestr mówi, że osoba nie żyje |
-| Nieistniejący | 15% | data urodzenia różni się o rok, rodzice zmarli przed urodzeniem |
+| Alive | 60% | all documents agree |
+| Dead | 25% | registry says the person died |
+| NonExistent | 15% | birth date differs by a year, parents died before the birth |
 
-Zasada dnia 1: wpuszczaj tylko żywych. Po każdej decyzji dostajesz informację, czy było dobrze i kim naprawdę był pasażer. Po 10 pasażerach zmiana się kończy i pojawia się przycisk MENU.
+Rule of day 1: admit only living passengers. After every decision you get feedback (right / wrong and who the passenger really was). After 10 passengers the shift ends and the MENU button appears.
 
-## Struktura projektu
+## Project structure
 
 ```
 Assets/
   Scenes/    MainMenu, Peron
   Scripts/
-    GameManager.cs          logika gry, decyzje, wynik
-    UIController.cs         wypełnia panele, wynik i komunikaty
-    PassengerData.cs        dane: PassengerTruth, Record, PassengerData
-    PassengerGenerator.cs   generator losowych pasażerów
+    GameManager.cs          game logic, decisions, score
+    UIController.cs         fills the panels, score and messages
+    PassengerData.cs        data: PassengerTruth, Record, PassengerData
+    PassengerGenerator.cs   random passenger generator
     MainMenu.cs             Play / Options / Quit
 ```
 
-Teksty w grze są po polsku, a kod, komentarze i nazwy obiektów po angielsku.
+In-game texts are in Polish; code, comments and object names are in English.
 
-## Plan rozwoju
+## Roadmap
 
-- [ ] Przeciąganie dokumentów i pieczątki
-- [ ] Rozmowy z pasażerami
-- [ ] Cykl dni ze zmieniającymi się zasadami
-- [ ] Pociąg reagujący na błędy
-- [ ] Zakończenie z twistem (pasażerem jesteś ty)
-- [ ] Grafika pixel-art i dźwięk
-- [ ] Premiera na Steam
+- [ ] Drag-and-drop documents and stamps
+- [ ] Dialogue with passengers
+- [ ] Day cycle with changing rules
+- [ ] Train reacting to mistakes
+- [ ] Twist ending (the passenger is you)
+- [ ] Pixel-art graphics and audio
+- [ ] Steam release
 
 ## Git
 
-Praca odbywa się na gałęzi `dev/iansky`. Foldery `Library/`, `Temp/`, `Logs/`, `obj/` i `UserSettings/` są ignorowane przez `.gitignore`.
+Work happens on the `dev/iansky` branch. `Library/`, `Temp/`, `Logs/`, `obj/` and `UserSettings/` are ignored via `.gitignore`.
