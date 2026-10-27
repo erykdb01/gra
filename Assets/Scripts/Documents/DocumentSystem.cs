@@ -123,9 +123,9 @@ public static class DocumentSystem
             ticket.front.Add(L("MIEJSCE", "SEAT", p.ticketText, null));
             ticket.front.Add(new DocLine(Loc.T("NR BILETU", "TICKET NO"), p.ticketNo) { isNumber = true });
             ticket.front.Add(new DocLine(Loc.T("DATA", "DATE"), day.date) { isDate = true });
-            ticket.front.Add(new DocLine(Loc.T("KASJER", "CASHIER"), Pick(doctors).Replace("dr ", "")) { isSignature = true, anomaly = p.forgedTicket ? "a_signature" : null });
+            ticket.front.Add(new DocLine(Loc.T("KASJER", "CASHIER"), PickDoctor().Replace("dr ", "").Replace("др ", "")) { isSignature = true, anomaly = p.forgedTicket ? "a_signature" : null });
             if (p.forgedTicket)
-                ticket.front.Add(Hidden("PIECZĘĆ", "SEAL", Loc.T("stacja: ", "station: ") + "Rzeszów", "a_seal", 2));
+                ticket.front.Add(Hidden("PIECZĘĆ", "SEAL", Loc.T("stacja: ", "station: ") + Loc.Name("Rzeszów"), "a_seal", 2));
             ticket.back.Add(L("UWAGA", "NOTICE", Loc.T("Bilet ważny tylko jedną noc.", "Valid for one night only."), null));
             ticket.back.Add(L("REGULAMIN", "RULES", Loc.T("Kolej nie odpowiada za osoby bez wpisu.", "The railway is not liable for persons without an entry."), null));
         }
@@ -163,7 +163,7 @@ public static class DocumentSystem
         reg.front.Add(L("IMIĘ I NAZWISKO", "NAME", name, null));
         reg.front.Add(new DocLine(Loc.T("UR.", "BORN"), bd) { isDate = true });
         reg.front.Add(L("STATUS", "STATUS", Loc.T("ŻYJE", "ALIVE"), null));
-        reg.front.Add(L("ADRES", "ADDRESS", p.origin + ", ul. " + Pick(new[] { "Długa", "Krótka", "Kolejowa", "Zimna", "Cicha" }) + " " + Random.Range(1, 60), null));
+        reg.front.Add(L("ADRES", "ADDRESS", Address(p.origin), null));
         reg.back.Add(L("UWAGA", "NOTE", Loc.T("Wpis urzędowy jest ostateczny.", "An official entry is final."), null));
 
         // ---------- manifest ----------
@@ -177,12 +177,12 @@ public static class DocumentSystem
         // ---------- medical ----------
         int lastVisit = Random.Range(Mathf.Max(1990, p.birthYear + 2), CurrentYear);
         var med = new DocumentData { type = DocumentType.Medical, number = "MED-" + Random.Range(1000, 9999), stamp = Loc.T("PRZYCHODNIA", "CLINIC") };
-        med.front.Add(L("PACJENT", "PATIENT", name, null));
+        med.front.Add(new DocLine(Loc.T(p.female ? "PACJENTKA" : "PACJENT", "PATIENT", p.female ? "ПАЦІЄНТКА" : "ПАЦІЄНТ"), name));
         med.front.Add(new DocLine(Loc.T("UR.", "BORN"), bd) { isDate = true });
         med.front.Add(L("GRUPA KRWI", "BLOOD TYPE", Pick(blood), null));
         med.front.Add(L("ROZPOZNANIE", "DIAGNOSIS", p.illness, null));
         med.front.Add(new DocLine(Loc.T("OSTATNIA WIZYTA", "LAST VISIT"), lastVisit.ToString()) { isDate = true });
-        med.front.Add(new DocLine(Loc.T("LEKARZ", "PHYSICIAN"), Pick(doctors)) { isSignature = true });
+        med.front.Add(new DocLine(Loc.T("LEKARZ", "PHYSICIAN"), PickDoctor()) { isSignature = true });
         med.back.Add(L("UWAGA", "NOTE", Loc.T("Karta nie zawiera informacji o pobycie w wagonie 13.", "The record contains nothing about stays in car 13."), null));
 
         // ---------- death record ----------
@@ -221,7 +221,7 @@ public static class DocumentSystem
             case PassengerTruth.Dead:
             {
                 string dd = p.deathDate;
-                Mark(reg, 2, Loc.T("ZMARŁ", "DECEASED"), "a_dead");
+                Mark(reg, 2, Loc.T(p.female ? "ZMARŁA" : "ZMARŁ", "DECEASED", p.female ? "ПОМЕРЛА" : "ПОМЕР"), "a_dead");
                 reg.front.Add(L("DATA ZGONU", "DATE OF DEATH", dd, "a_dead"));
                 Mark(db, 2, Loc.T("NIEAKTYWNY", "INACTIVE"), null);
                 Mark(db, 3, p.deathYear.ToString(), null);
@@ -229,7 +229,7 @@ public static class DocumentSystem
                 death.front.Clear();
                 death.front.Add(L("DATA ZGONU", "DATE OF DEATH", dd, "a_dead"));
                 death.front.Add(L("PRZYCZYNA", "CAUSE", p.deathCause, null));
-                death.front.Add(L("POCHOWANY", "BURIED", p.origin, null));
+                death.front.Add(L("MIEJSCE POCHÓWKU", "BURIAL PLACE", p.origin, null));
                 travel.front.Add(new DocLine((p.deathYear + Random.Range(1, 4)).ToString(), p.origin + " → " + Loc.T("Stacja ", "Station ") + p.station) { isDate = true, anomaly = "a_date" });
                 p.anomalies.Add("a_dead");
                 break;
@@ -288,7 +288,7 @@ public static class DocumentSystem
             {
                 Mark(db, 2, Loc.T("PAMIĘĆ", "MEMORY"), "a_echo");
                 db.front.Add(L("ŹRÓDŁO", "SOURCE", Loc.T("zgłoszenie świadków, nie osoby", "reported by witnesses, not by the person"), "a_echo"));
-                travel.front.Add(new DocLine(CurrentYear.ToString(), Loc.T("z: ", "with: ") + Pick(new[] { "Anna Wolska", "Marek Sowa", "Piotr Wrona" })) { isDate = true });
+                travel.front.Add(new DocLine(CurrentYear.ToString(), Loc.T("z: ", "with: ") + PickT(new[] { "Anna Wolska", "Marek Sowa", "Piotr Wrona" })) { isDate = true });
                 p.anomalies.Add("a_echo");
                 break;
             }
@@ -371,6 +371,21 @@ public static class DocumentSystem
 
     static string Pick(string[] a) { return a[Random.Range(0, a.Length)]; }
 
+    static string Address(string city)
+    {
+        string[] pl = { "Długa", "Krótka", "Kolejowa", "Zimna", "Cicha" };
+        string[] en = { "Long", "Short", "Railway", "Cold", "Quiet" };
+        int i = Random.Range(0, pl.Length);
+        int no = Random.Range(1, 60);
+        return Loc.T(city + ", ul. " + pl[i] + " " + no,
+                     city + ", " + no + " " + en[i] + " St.",
+                     city + ", вул. " + UkStrings.Get(pl[i], en[i]) + ", " + no);
+    }
+
+    static string PickT(string[] a) { string d = Pick(a); return Loc.T(d, d); }
+
+    static string PickDoctor() { string d = Pick(doctors); return Loc.T(d, d); }
+
     public static string RandomIllness()
     {
         string[] ill =
@@ -432,34 +447,34 @@ public static class DocumentSystem
             case QueryTicket:
                 if (p.noTicket) { anomaly = "a_name"; return Loc.T("Brak biletu w systemie.", "No ticket in the system."); }
                 if (p.forgedTicket) { anomaly = "a_name"; return Loc.T("BRAK ZGODNOŚCI. Bilet wystawiono na inne imię.", "NO MATCH. The ticket was issued in a different name."); }
-                if (p.truth == PassengerTruth.NonExistent || p.truth == PassengerTruth.Unknown) { anomaly = "a_norecord"; return Loc.T("Bilet " + p.ticketNo + " wystawiony na: ??? (brak posiadacza)", "Ticket " + p.ticketNo + " issued to: ??? (no holder)"); }
-                return Loc.T("Bilet " + p.ticketNo + " wystawiony na " + p.fullName + ". Ważny.", "Ticket " + p.ticketNo + " issued to " + p.fullName + ". Valid.");
+                if (p.truth == PassengerTruth.NonExistent || p.truth == PassengerTruth.Unknown) { anomaly = "a_norecord"; return Loc.T("Bilet " + p.ticketNo + " wystawiony na: ??? (brak posiadacza)", "Ticket " + p.ticketNo + " issued to: ??? (no holder)", "Квиток " + p.ticketNo + " виписано на: ??? (власника немає)"); }
+                return Loc.T("Bilet " + p.ticketNo + " wystawiony na nazwisko: " + p.fullName + ". Ważny.", "Ticket " + p.ticketNo + " issued to " + p.fullName + ". Valid.", "Квиток " + p.ticketNo + ". Власник: " + p.fullName + ". Дійсний.");
             case QueryDocument:
-                if (p.truth == PassengerTruth.Impostor) { anomaly = "a_photo"; return Loc.T("Dokument " + p.docNo + " należy do innej osoby. Zgłoszona kradzież.", "Document " + p.docNo + " belongs to another person. Theft reported."); }
-                if (p.truth == PassengerTruth.NonExistent) { anomaly = "a_norecord"; return Loc.T("Brak rekordu dla numeru " + p.docNo + ".", "No record for number " + p.docNo + "."); }
-                if (p.truth == PassengerTruth.Dead) { anomaly = "a_dead"; return Loc.T("Dokument " + p.docNo + " unieważniony w " + p.deathYear + " r.", "Document " + p.docNo + " revoked in " + p.deathYear + "."); }
+                if (p.truth == PassengerTruth.Impostor) { anomaly = "a_photo"; return Loc.T("Dokument " + p.docNo + " należy do innej osoby. Zgłoszono kradzież.", "Document " + p.docNo + " belongs to another person. Theft reported.", "Документ " + p.docNo + " належить іншій особі. Повідомлено про викрадення."); }
+                if (p.truth == PassengerTruth.NonExistent) { anomaly = "a_norecord"; return Loc.T("Brak rekordu dla numeru " + p.docNo + ".", "No record for number " + p.docNo + ".", "Запису для номера " + p.docNo + " немає."); }
+                if (p.truth == PassengerTruth.Dead) { anomaly = "a_dead"; return Loc.T("Dokument " + p.docNo + " unieważniony w " + p.deathYear + " r.", "Document " + p.docNo + " revoked in " + p.deathYear + ".", "Документ " + p.docNo + " анульовано в " + p.deathYear + " р."); }
                 if (p.truth == PassengerTruth.Loop) { anomaly = "a_date"; return Loc.T("Dokument wydany w przyszłości. Data systemowa niezgodna.", "Document issued in the future. System date mismatch."); }
                 if (p.truth == PassengerTruth.Altered) { anomaly = "a_amended"; return Loc.T("Dokument zmieniony ręcznie. Dane się nie zgadzają.", "Document changed by hand. Data does not match."); }
                 if (p.truth == PassengerTruth.Unknown) { anomaly = "a_unknown"; return Loc.T("Błąd. Numer wskazuje sam na siebie.", "Error. The number points back to itself."); }
-                return Loc.T("Dokument " + p.docNo + " zgodny z osobą " + p.fullName + ".", "Document " + p.docNo + " matches " + p.fullName + ".");
+                return Loc.T("Dokument " + p.docNo + " zgodny z danymi osoby: " + p.fullName + ".", "Document " + p.docNo + " matches " + p.fullName + ".", "Документ " + p.docNo + " відповідає особі: " + p.fullName + ".");
             case QueryRelatives:
-                if (p.truth == PassengerTruth.NonExistent) { anomaly = "a_norecord"; return Loc.T("Matka: " + p.motherName + ", zm. " + p.motherDeathYear + ". Data jest wcześniejsza niż data urodzenia pasażera.", "Mother: " + p.motherName + ", d. " + p.motherDeathYear + ". This is earlier than the passenger's birth date."); }
-                if (p.truth == PassengerTruth.Dead) return Loc.T("Matka: " + p.motherName + ", zm. " + (p.deathYear - Random.Range(1, 8)) + ".", "Mother: " + p.motherName + ", d. " + (p.deathYear - Random.Range(1, 8)) + ".");
-                if (p.truth == PassengerTruth.Echo) { anomaly = "a_echo"; return Loc.T("Brak krewnych. Wspominany przez: " + p.motherName + ".", "No relatives. Remembered by: " + p.motherName + "."); }
+                if (p.truth == PassengerTruth.NonExistent) { anomaly = "a_norecord"; return Loc.T("Matka: " + p.motherName + ", zm. " + p.motherDeathYear + ". Ta data jest wcześniejsza niż data urodzenia " + (p.female ? "pasażerki" : "pasażera") + ".", "Mother: " + p.motherName + ", d. " + p.motherDeathYear + ". This is earlier than the passenger's birth date.", "Мати: " + p.motherName + ", пом. " + p.motherDeathYear + ". Ця дата раніша за дату народження " + (p.female ? "пасажирки" : "пасажира") + "."); }
+                if (p.truth == PassengerTruth.Dead) { int my = p.deathYear - Random.Range(1, 8); return Loc.T("Matka: " + p.motherName + ", zm. " + my + ".", "Mother: " + p.motherName + ", d. " + my + ".", "Мати: " + p.motherName + ", пом. " + my + "."); }
+                if (p.truth == PassengerTruth.Echo) { anomaly = "a_echo"; return Loc.T("Brak krewnych. " + (p.female ? "Wspominana" : "Wspominany") + " przez: " + p.motherName + ".", "No relatives. Remembered by: " + p.motherName + ".", "Родичів немає. Згадує: " + p.motherName + "."); }
                 if (p.truth == PassengerTruth.Unknown) { anomaly = "a_unknown"; return Loc.T("Pokrewieństwo: K-13-0013 (konduktor). Pętla.", "Relation: K-13-0013 (conductor). Loop."); }
                 if (p.storyId == "lena_1") return Loc.T("Matka: Anna Wolska, aktywna.", "Mother: Anna Wolska, active.");
-                return Loc.T("Matka: " + p.motherName + ", aktywna w bazie.", "Mother: " + p.motherName + ", active in the database.");
+                return Loc.T("Matka: " + p.motherName + ", aktywna w bazie.", "Mother: " + p.motherName + ", active in the database.", "Мати: " + p.motherName + ", активна в базі.");
             case QueryHistory:
-                if (p.truth == PassengerTruth.NonExistent) { anomaly = "a_norecord"; return Loc.T("Brak przejazdów. Mimo to wagon: " + Random.Range(1, 6) + " był zarezerwowany.", "No journeys. Yet car " + Random.Range(1, 6) + " was reserved."); }
-                if (p.truth == PassengerTruth.Dead) { anomaly = "a_date"; return Loc.T("Ostatni przejazd: " + p.deathYear + ". Kolejne " + Random.Range(1, 5) + " po zgonie.", "Last journey: " + p.deathYear + ". " + Random.Range(1, 5) + " more after death."); }
-                if (p.truth == PassengerTruth.Loop) { anomaly = "a_date"; return Loc.T("Przejazdy z daty przyszłej: " + Random.Range(1, 4) + ".", "Journeys dated in the future: " + Random.Range(1, 4) + "."); }
-                return Loc.T("Przejazdy Linią 13: " + Random.Range(1, 12) + ". Ostatni: dawno.", "Line 13 journeys: " + Random.Range(1, 12) + ". Last: long ago.");
+                if (p.truth == PassengerTruth.NonExistent) { anomaly = "a_norecord"; { int car = Random.Range(1, 6); return Loc.T("Brak przejazdów. Mimo to wagon " + car + " był zarezerwowany.", "No journeys. Yet car " + car + " was reserved.", "Поїздок немає. Попри це вагон " + car + " був заброньований."); } }
+                if (p.truth == PassengerTruth.Dead) { anomaly = "a_date"; { int k = Random.Range(1, 5); return Loc.T("Ostatni przejazd: " + p.deathYear + ". Po zgonie: " + Loc.PluralOf(k, 0, "przejazd", "przejazdy", "przejazdów", "", "", "", "", "").Insert(0, k + " "), "Last journey: " + p.deathYear + ". After death: " + k + (k == 1 ? " more journey." : " more journeys."), "Остання поїздка: " + p.deathYear + ". Після смерті: " + k + " " + Loc.PluralOf(k, 2, "", "", "", "", "", "поїздка", "поїздки", "поїздок") + "."); } }
+                if (p.truth == PassengerTruth.Loop) { anomaly = "a_date"; return Loc.T("Przejazdy z datą przyszłą: " + Random.Range(1, 4) + ".", "Journeys dated in the future: " + Random.Range(1, 4) + ".", "Поїздки з майбутньою датою: " + Random.Range(1, 4) + "."); }
+                return Loc.T("Przejazdy Linią 13: " + Random.Range(1, 12) + ". Ostatni: dawno temu.", "Line 13 journeys: " + Random.Range(1, 12) + ". Last: long ago.", "Поїздки Лінією 13: " + Random.Range(1, 12) + ". Остання: давно.");
             default:
             {
                 int baseIdx = p.truth == PassengerTruth.Alive ? Random.Range(3, 15) : Random.Range(55, 96);
                 int noise = Random.Range(-(11 - lvl) * 3, (11 - lvl) * 3 + 1);
                 int idx = Mathf.Clamp(baseIdx + noise, 0, 100);
-                return Loc.T("Indeks anomalii: " + idx + "%.", "Anomaly index: " + idx + "%.") + (lvl < 4 ? Loc.T(" (odczyt niepewny)", " (uncertain reading)") : "");
+                return Loc.T("Indeks anomalii: " + idx + "%.", "Anomaly index: " + idx + "%.", "Індекс аномалій: " + idx + "%.") + (lvl < 4 ? Loc.T(" (odczyt niepewny)", " (uncertain reading)") : "");
             }
         }
     }

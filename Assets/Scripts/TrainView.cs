@@ -130,6 +130,7 @@ public class TrainView : MonoBehaviour
     public IEnumerator Arrive()
     {
         moving = true;
+        if (SoundFX.I != null) { SoundFX.I.SetTrainPresent(true); SoundFX.I.SetTrainState(TrainAudioState.Arriving); }
         float dur = 2.6f;
         for (float e = 0f; e < dur; e += Time.deltaTime)
         {
@@ -139,11 +140,13 @@ public class TrainView : MonoBehaviour
         }
         basePos = new Vector2(0f, TrainY);
         moving = false;
+        if (SoundFX.I != null) SoundFX.I.SetTrainState(TrainAudioState.Stopped);
     }
 
     public IEnumerator Depart()
     {
         moving = true;
+        if (SoundFX.I != null) SoundFX.I.SetTrainState(TrainAudioState.Departing);
         float dur = 3f;
         for (float e = 0f; e < dur; e += Time.deltaTime)
         {
@@ -153,6 +156,7 @@ public class TrainView : MonoBehaviour
         }
         basePos = new Vector2(1900f, TrainY);
         moving = false;
+        if (SoundFX.I != null) { SoundFX.I.SetTrainState(TrainAudioState.Away); SoundFX.I.SetTrainPresent(false); }
     }
 
     public void ParkOffscreen()

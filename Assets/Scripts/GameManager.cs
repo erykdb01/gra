@@ -296,6 +296,8 @@ public class GameManager : MonoBehaviour
         sfx.StartAmbience(true);
         sfx.SetAutoMusic(true);
         train.ParkOffscreen();
+        sfx.SetTrainPresent(false);
+        sfx.SetTrainState(TrainAudioState.Away);
         SetDecisionButtons(false);
         dialogue.Clear();
 
@@ -316,6 +318,7 @@ public class GameManager : MonoBehaviour
         {
             day = endless ? EndlessManager.Build(nightIndex + 1) : StoryManager.Night(nightIndex);
             CurrentNight = nightIndex;
+            sfx.SetNight(endless ? Mathf.Min(12, nightIndex) : nightIndex);
             ctx.day = day;
             ctx.StoryMode = !endless;
             ctx.nightNumber = nightIndex + 1;
@@ -519,6 +522,7 @@ public class GameManager : MonoBehaviour
         ui.SetMessage("");
         ui.ShowPassenger(current);
         SetPortrait(current);
+        sfx.OnPassenger(current.truth, current.isPlayer);
         if (!string.IsNullOrEmpty(current.codexOnMeet)) Codex.Unlock(current.codexOnMeet);
         AchievementSystem.OnPassengerMet(current);
         if (current.isPlayer) Codex.Unlock("unk_you", true);
@@ -606,7 +610,7 @@ public class GameManager : MonoBehaviour
         bool correct = admit == should;
         bool judged = day.judged;
         string msg = "";
-        string truthName = UIController.TruthName(p.truth) + (p.forgedTicket ? Loc.T(", z fałszywym biletem", ", with a forged ticket") : "");
+        string truthName = UIController.TruthName(p.truth, p.female) + (p.forgedTicket ? Loc.T(", z fałszywym biletem", ", with a forged ticket") : "");
 
         report.passengers++;
         if (admit) report.admitted++; else report.denied++;
@@ -640,7 +644,9 @@ public class GameManager : MonoBehaviour
                 if (!admit && p.sympathetic)
                 {
                     PlayerStats.AddConscience(-1);
-                    msg = Loc.T("Zgodnie z przepisami. Ale on tak prosił...", "By the rules. But they begged so much...");
+                    msg = Loc.T(p.female ? "Zgodnie z przepisami. Ale ona tak prosiła..." : "Zgodnie z przepisami. Ale on tak prosił...",
+                                "By the rules. But they pleaded so much...",
+                                p.female ? "Згідно з правилами. Але вона так просила…" : "Згідно з правилами. Але він так просив…");
                 }
                 else msg = Loc.T("Dobra decyzja.", "Good decision.");
                 sfx.Good();
@@ -666,21 +672,25 @@ public class GameManager : MonoBehaviour
                     else
                     {
                         PlayerStats.AddStress(p.truth != PassengerTruth.Alive ? 10 : 6);
-                        msg = Loc.T("Błąd. Wpuściłeś: ", "Mistake. You admitted: ") + truthName + ".";
+                        msg = Loc.T(p.female ? "Błąd. Wpuściłeś pasażerkę. Była: " : "Błąd. Wpuściłeś pasażera. Był: ",
+                                    "Mistake. You admitted a passenger who was: ",
+                                    p.female ? "Помилка. Ти пропустив пасажирку. Вона була: " : "Помилка. Ти пропустив пасажира. Він був: ") + truthName + ".";
                     }
                 }
                 else
                 {
                     PlayerStats.AddStress(5);
                     if (p.sympathetic) PlayerStats.AddConscience(-1);
-                    msg = Loc.T("Błąd. To był pasażer: ", "Mistake. The passenger was: ") + truthName + ".";
+                    msg = Loc.T(p.female ? "Błąd. To była pasażerka: " : "Błąd. To był pasażer: ",
+                                "Mistake. The passenger was: ",
+                                p.female ? "Помилка. Це була пасажирка: " : "Помилка. Це був пасажир: ") + truthName + ".";
                 }
                 if (day.maxMistakes >= 0 && report.mistakes > day.maxMistakes)
                 {
                     failed = true;
                     failTitle = Loc.T("ZWOLNIONY", "FIRED");
                     failText = Loc.T("Zbyt wiele błędów w jedną noc. Dyrekcja zabiera ci mundur.\n\nBłędy tej nocy: ", "Too many mistakes in one night. The Directorate takes your uniform.\n\nMistakes tonight: ") +
-                               report.mistakes + " (limit: " + day.maxMistakes + ")";
+                               report.mistakes + Loc.T(" (limit: ", " (limit: ", " (ліміт: ") + day.maxMistakes + ")";
                 }
             }
             if (!revealTruth) msg = correct ? Loc.T("Decyzja zapisana.", "Decision recorded.") : Loc.T("Decyzja zapisana. Coś jest nie tak.", "Decision recorded. Something is off.");
@@ -691,7 +701,9 @@ public class GameManager : MonoBehaviour
             if (p.sympathetic)
             {
                 if (admit) { PlayerStats.AddConscience(1); PlayerStats.Relax(2); msg = Loc.T("Litość.", "Mercy."); }
-                else       { PlayerStats.AddConscience(-1); PlayerStats.AddStress(3); msg = Loc.T("Zostawiasz go na peronie.", "You leave them on the platform."); }
+                else       { PlayerStats.AddConscience(-1); PlayerStats.AddStress(3); msg = Loc.T(p.female ? "Zostawiasz ją na peronie." : "Zostawiasz go na peronie.",
+                                                                                     "You leave them on the platform.",
+                                                                                     p.female ? "Ти залишаєш її на пероні." : "Ти залишаєш його на пероні."); }
             }
             else if (admit && p.truth != PassengerTruth.Alive)
             {

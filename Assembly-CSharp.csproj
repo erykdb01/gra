@@ -58,13 +58,16 @@
   <ItemGroup>
     <Compile Include="Assets\Scripts\World\PixelArtExtras.cs" />
     <Compile Include="Assets\Scripts\Progression\AchievementSystem.cs" />
+    <Compile Include="Assets\Scripts\Localization\UkStrings_3.cs" />
     <Compile Include="Assets\Scripts\SoundFX.cs" />
     <Compile Include="Assets\Scripts\Loc.cs" />
     <Compile Include="Assets\Scripts\Core\GameState.cs" />
     <Compile Include="Assets\Scripts\Story\StoryData.cs" />
     <Compile Include="Assets\Scripts\Core\GameEvents.cs" />
     <Compile Include="Assets\Scripts\Events\EventLibrary.cs" />
+    <Compile Include="Assets\Scripts\Audio\AmbienceDirector.cs" />
     <Compile Include="Assets\Scripts\UI\ClockUI.cs" />
+    <Compile Include="Assets\Scripts\Localization\UkStrings_0.cs" />
     <Compile Include="Assets\Scripts\MainMenu.cs" />
     <Compile Include="Assets\Scripts\UIController.cs" />
     <Compile Include="Assets\Scripts\Story\StoryManager.cs" />
@@ -72,15 +75,19 @@
     <Compile Include="Assets\Scripts\UIKit.cs" />
     <Compile Include="Assets\Scripts\DialoguePanel.cs" />
     <Compile Include="Assets\Scripts\UI\AchievementUI.cs" />
+    <Compile Include="Assets\Scripts\Audio\AudioBus.cs" />
     <Compile Include="Assets\Scripts\Documents\DocumentSystem.cs" />
     <Compile Include="Assets\Scripts\Progression\Codex.cs" />
+    <Compile Include="Assets\Scripts\Localization\LocFont.cs" />
     <Compile Include="Assets\Scripts\GameManager.cs" />
     <Compile Include="Assets\Scripts\UI\CodexUI.cs" />
     <Compile Include="Assets\Scripts\Documents\DocumentData.cs" />
     <Compile Include="Assets\Scripts\Story\StoryCast.cs" />
+    <Compile Include="Assets\Scripts\Localization\UkStrings.cs" />
     <Compile Include="Assets\Scripts\DialogueBank.cs" />
     <Compile Include="Assets\Scripts\Dialogue\DialogueManager.cs" />
     <Compile Include="Assets\Scripts\Overlay.cs" />
+    <Compile Include="Assets\Scripts\Audio\AudioDSP.cs" />
     <Compile Include="Assets\Scripts\GameSettings.cs" />
     <Compile Include="Assets\Scripts\Core\SaveData.cs" />
     <Compile Include="Assets\Scripts\Horror\HorrorManager.cs" />
@@ -91,15 +98,18 @@
     <Compile Include="Assets\Scripts\StageView.cs" />
     <Compile Include="Assets\Scripts\Story\EndlessManager.cs" />
     <Compile Include="Assets\Scripts\PauseMenu.cs" />
+    <Compile Include="Assets\Scripts\Localization\UkStrings_1.cs" />
     <Compile Include="Assets\Scripts\Train\TrainSystem.cs" />
     <Compile Include="Assets\Scripts\Core\GameContext.cs" />
     <Compile Include="Assets\Scripts\CharacterView.cs" />
     <Compile Include="Assets\Scripts\Horror\AnomalySystem.cs" />
     <Compile Include="Assets\Scripts\Core\ShiftReport.cs" />
+    <Compile Include="Assets\Scripts\Localization\UkStrings_2.cs" />
     <Compile Include="Assets\Scripts\Progression\SkillSystem.cs" />
     <Compile Include="Assets\Scripts\SettingsPanel.cs" />
     <Compile Include="Assets\Scripts\Documents\DocumentInspector.cs" />
     <Compile Include="Assets\Scripts\PixelArt.cs" />
+    <Compile Include="Assets\Scripts\Audio\AudioDebug.cs" />
     <Compile Include="Assets\Scripts\HudPanel.cs" />
     <Compile Include="Assets\Scripts\DraggableDocument.cs" />
     <Compile Include="Assets\Scripts\UI\UIFx.cs" />
@@ -108,6 +118,7 @@
     <Compile Include="Assets\Scripts\PassengerGenerator.cs" />
     <Compile Include="Assets\Scripts\PassengerData.cs" />
     <Compile Include="Assets\Scripts\UI\ShiftResultsUI.cs" />
+    <Compile Include="Assets\Scripts\Localization\UkNames.cs" />
     <Compile Include="Assets\Scripts\TrainView.cs" />
     <Compile Include="Assets\Scripts\DayConfig.cs" />
   </ItemGroup>

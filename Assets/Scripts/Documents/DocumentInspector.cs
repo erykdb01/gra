@@ -637,7 +637,8 @@ public class DocumentInspector : MonoBehaviour
     {
         if (passenger == null) return;
         DocumentData id = DocumentSystem.Get(passenger, DocumentType.Id);
-        if (id == null || !IsAvailable((int)DocumentType.Id)) { Say(Loc.T("Ten pasażer nie ma dowodu ze zdjęciem.", "This passenger has no photo ID.")); return; }
+        if (id == null || !IsAvailable((int)DocumentType.Id)) { Say(Loc.T(passenger.female ? "Ta pasażerka nie ma dowodu ze zdjęciem." : "Ten pasażer nie ma dowodu ze zdjęciem.", "This passenger has no photo ID.",
+                                                                                                    passenger.female ? "Ця пасажирка не має посвідчення з фото." : "Цей пасажир не має посвідчення з фото.")); return; }
         current = (int)DocumentType.Id;
         flipped[current] = false;
         Spend(1);
@@ -663,7 +664,8 @@ public class DocumentInspector : MonoBehaviour
             AnomalySystem.Discover("a_photo", Skill.Observation);
             Say("<color=#E07070>" + Loc.T("Zdjęcie przedstawia kogoś innego niż osoba przed tobą.", "The photo shows someone other than the person in front of you.") + "</color>");
         }
-        else Say("<color=#7FD08A>" + Loc.T("Zdjęcie zgadza się z twarzą pasażera.", "The photo matches the passenger's face.") + "</color>");
+        else Say("<color=#7FD08A>" + Loc.T(passenger.female ? "Zdjęcie zgadza się z twarzą pasażerki." : "Zdjęcie zgadza się z twarzą pasażera.", "The photo matches the passenger's face.",
+                                                    passenger.female ? "Фото збігається з обличчям пасажирки." : "Фото збігається з обличчям пасажира.") + "</color>");
         Redraw();
     }
 

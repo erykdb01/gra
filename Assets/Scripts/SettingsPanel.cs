@@ -13,7 +13,7 @@ public class SettingsPanel : MonoBehaviour
     TextMeshProUGUI masterLabel, musicLabel, sfxLabel;
     TextMeshProUGUI fullLabel, resLabel, shakeLabel, horrorLabel, speedLabel;
     Slider masterSlider, musicSlider, sfxSlider;
-    Image polishBtn, englishBtn;
+    Image polishBtn, englishBtn, ukrainianBtn;
     bool open;
 
     public static bool IsOpen
@@ -89,15 +89,21 @@ public class SettingsPanel : MonoBehaviour
         UIKit.Anchor(langLabel.rectTransform, UIKit.TC, UIKit.TC, UIKit.TC, new Vector2(lx, -580), new Vector2(760, 50));
 
         TextMeshProUGUI lp, le;
-        Button pl = UIKit.MakeButton("LangPl", rt, "POLSKI", new Vector2(240, 70), new Color(0.85f, 0.85f, 0.9f), 30, out lp);
-        UIKit.Anchor((RectTransform)pl.transform, UIKit.TC, UIKit.TC, UIKit.TC, new Vector2(lx - 130, -640), new Vector2(240, 70));
+        Button pl = UIKit.MakeButton("LangPl", rt, "POLSKI", new Vector2(220, 70), new Color(0.85f, 0.85f, 0.9f), 28, out lp);
+        UIKit.Anchor((RectTransform)pl.transform, UIKit.TC, UIKit.TC, UIKit.TC, new Vector2(lx - 235, -640), new Vector2(220, 70));
         pl.onClick.AddListener(() => { Loc.Set(Loc.Language.Polish); Refresh(); });
         polishBtn = pl.GetComponent<Image>();
 
-        Button en = UIKit.MakeButton("LangEn", rt, "ENGLISH", new Vector2(240, 70), new Color(0.85f, 0.85f, 0.9f), 30, out le);
-        UIKit.Anchor((RectTransform)en.transform, UIKit.TC, UIKit.TC, UIKit.TC, new Vector2(lx + 130, -640), new Vector2(240, 70));
+        Button en = UIKit.MakeButton("LangEn", rt, "ENGLISH", new Vector2(220, 70), new Color(0.85f, 0.85f, 0.9f), 28, out le);
+        UIKit.Anchor((RectTransform)en.transform, UIKit.TC, UIKit.TC, UIKit.TC, new Vector2(lx, -640), new Vector2(220, 70));
         en.onClick.AddListener(() => { Loc.Set(Loc.Language.English); Refresh(); });
         englishBtn = en.GetComponent<Image>();
+
+        TextMeshProUGUI lu;
+        Button ua = UIKit.MakeButton("LangUa", rt, "УКРАЇНСЬКА", new Vector2(220, 70), new Color(0.85f, 0.85f, 0.9f), 24, out lu);
+        UIKit.Anchor((RectTransform)ua.transform, UIKit.TC, UIKit.TC, UIKit.TC, new Vector2(lx + 235, -640), new Vector2(220, 70));
+        ua.onClick.AddListener(() => { Loc.Set(Loc.Language.Ukrainian); Refresh(); });
+        ukrainianBtn = ua.GetComponent<Image>();
 
         // ----- right column: display and gameplay -----
         float rx = 470f;
@@ -162,12 +168,13 @@ public class SettingsPanel : MonoBehaviour
         string[] speeds = { Loc.T("WOLNY", "SLOW"), Loc.T("NORMALNY", "NORMAL"), Loc.T("SZYBKI", "FAST"), Loc.T("NATYCHMIAST", "INSTANT") };
         speedLabel.text = Loc.T("TEMPO TEKSTU: ", "TEXT SPEED: ") + speeds[Mathf.Clamp(GameSettings.TextSpeed, 0, 3)];
 
-        langLabel.text = Loc.T("JĘZYK / LANGUAGE", "LANGUAGE / JĘZYK");
+        langLabel.text = Loc.T("JĘZYK / LANGUAGE / МОВА", "LANGUAGE / JĘZYK / МОВА", "МОВА / LANGUAGE / JĘZYK");
         backLabel.text = Loc.T("WRÓĆ", "BACK");
 
         Color on = new Color(0.6f, 0.85f, 0.6f);
         Color off = new Color(0.85f, 0.85f, 0.9f);
         polishBtn.color = Loc.IsPolish ? on : off;
-        englishBtn.color = Loc.IsPolish ? off : on;
+        englishBtn.color = Loc.IsEnglish ? on : off;
+        ukrainianBtn.color = Loc.IsUkrainian ? on : off;
     }
 }

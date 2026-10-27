@@ -7,8 +7,9 @@ public class CodexEntry
     public string id;
     public CodexCategory category;
     public string titlePl, titleEn, textPl, textEn;
-    public string title { get { return Loc.T(titlePl, titleEn); } }
-    public string text { get { return Loc.T(textPl, textEn); } }
+    public string titleUk, textUk;   // optional: entries built from run-time data carry their own Ukrainian text
+    public string title { get { return Loc.T(titlePl, titleEn, titleUk); } }
+    public string text { get { return Loc.T(textPl, textEn, textUk); } }
 }
 
 // The in-game encyclopaedia. Entries fill up while you play.
@@ -244,6 +245,9 @@ public static class Codex
             DayConfig d = StoryData.Nights[i];
             Add("rule_n" + i, CodexCategory.Rules, "Noc " + (i + 1) + ": " + d.titlePl, "Night " + (i + 1) + ": " + d.titleEn,
                 d.rulePl + "\n\n" + d.briefingPl, d.ruleEn + "\n\n" + d.briefingEn);
+            CodexEntry re = byId["rule_n" + i];
+            re.titleUk = "Ніч " + (i + 1) + ": " + UkStrings.Get(d.titlePl, d.titleEn);
+            re.textUk = UkStrings.Get(d.rulePl, d.ruleEn) + "\n\n" + UkStrings.Get(d.briefingPl, d.briefingEn);
         }
         Add("rule_endless", CodexCategory.Rules, "Nieskończona zmiana", "Endless Shift",
             "Poza kampanią zasady zmieniają się co noc losowo. Kolej nie tłumaczy się z tego.",

@@ -37,7 +37,7 @@ public static class EndlessManager
         var d = new DayConfig();
         d.act = 0;
         d.level = level;
-        d.titlePl = "Zmiana " + level; d.titleEn = "Shift " + level;
+        d.titlePl = "Zmiana " + level; d.titleEn = "Shift " + level; d.titleUk = "Зміна " + level;
         d.actPl = "NOCNA ZMIANA"; d.actEn = "NIGHT SHIFT";
 
         // choose a rule available at this level
@@ -75,10 +75,13 @@ public static class EndlessManager
         d.events = EventLibrary.EndlessPool(level);
         d.eventCount = Mathf.Min(4, level / 2);
 
+        int secs = Mathf.RoundToInt(d.timeLimit);
         d.briefingPl = "Poziom " + level + ". Zasady zmieniają się co noc, a kolej nie wyjaśnia dlaczego. Trzynaście osób na peronie. Zegar tyka." +
-                       (d.timeLimit > 0 ? " Na każdego pasażera masz " + Mathf.RoundToInt(d.timeLimit) + " sekund." : "");
+                       (d.timeLimit > 0 ? " Na każdego pasażera masz " + secs + " " + Loc.PluralOf(secs, 0, "sekundę", "sekundy", "sekund", "second", "seconds", "секунду", "секунди", "секунд") + "." : "");
         d.briefingEn = "Level " + level + ". The rules change every night and the railway does not explain why. Thirteen people on the platform. The clock is ticking." +
-                       (d.timeLimit > 0 ? " You have " + Mathf.RoundToInt(d.timeLimit) + " seconds for each passenger." : "");
+                       (d.timeLimit > 0 ? " You have " + secs + " " + Loc.PluralOf(secs, 1, "sekundę", "sekundy", "sekund", "second", "seconds", "секунду", "секунди", "секунд") + " for each passenger." : "");
+        d.briefingUk = "Рівень " + level + ". Правила змінюються щоночі, а залізниця не пояснює чому. Тринадцять людей на пероні. Годинник цокає." +
+                       (d.timeLimit > 0 ? " На кожного пасажира в тебе є " + secs + " " + Loc.PluralOf(secs, 2, "sekundę", "sekundy", "sekund", "second", "seconds", "секунду", "секунди", "секунд") + "." : "");
         d.outroPl = "Kolejna noc za tobą. Peron już czeka.";
         d.outroEn = "Another night behind you. The platform is already waiting.";
         d.codexAtStart = new[] { "rule_endless", "doc_ticket", "doc_id", "doc_raildb", "doc_registry" };

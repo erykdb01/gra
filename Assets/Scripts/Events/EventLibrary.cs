@@ -152,8 +152,10 @@ public static class EventLibrary
 
     static IEnumerator SeenBefore(GameContext c)
     {
-        c.dialogue.Interject(Loc.T("\"Widziałem już pana. Wczoraj, o tej samej porze. Powiedział pan dokładnie to samo.\"",
-                                   "\"I have seen you before. Yesterday, at this very hour. You said exactly the same thing.\""));
+        bool fem = c.current != null && c.current.female;
+        c.dialogue.Interject(Loc.T(fem ? "\"Widziałam już pana. Wczoraj, o tej samej porze. Powiedział pan dokładnie to samo.\"" : "\"Widziałem już pana. Wczoraj, o tej samej porze. Powiedział pan dokładnie to samo.\"",
+                                   "\"I have seen you before. Yesterday, at this very hour. You said exactly the same thing.\"",
+                                   fem ? "«Я вже бачила вас. Учора, о цій самій порі. Ви сказали те саме слово в слово.»" : "«Я вже бачив вас. Учора, о цій самій порі. Ви сказали те саме слово в слово.»"));
         c.lighting.FlickerLantern(0.8f);
         PlayerStats.AddStress(2);
         SkillSystem.Give(Skill.Observation, 3);
@@ -236,8 +238,10 @@ public static class EventLibrary
 
     static IEnumerator Remember(GameContext c)
     {
-        c.dialogue.Interject(Loc.T("\"Czy pan też pamięta poprzednią noc? Bo ja pamiętam ją bardzo dokładnie. Byłem tu. Wszyscy tu byliśmy.\"",
-                                   "\"Do you remember last night too? Because I remember it very clearly. I was here. We were all here.\""));
+        bool fem = c.current != null && c.current.female;
+        c.dialogue.Interject(Loc.T(fem ? "\"Czy pan też pamięta poprzednią noc? Bo ja pamiętam ją bardzo dokładnie. Byłam tu. Wszyscy tu byliśmy.\"" : "\"Czy pan też pamięta poprzednią noc? Bo ja pamiętam ją bardzo dokładnie. Byłem tu. Wszyscy tu byliśmy.\"",
+                                   "\"Do you remember last night too? Because I remember it very clearly. I was here. We were all here.\"",
+                                   fem ? "«Ви теж пам’ятаєте попередню ніч? Бо я пам’ятаю її дуже добре. Я була тут. Ми всі тут були.»" : "«Ви теж пам’ятаєте попередню ніч? Бо я пам’ятаю її дуже добре. Я був тут. Ми всі тут були.»"));
         yield return new WaitForSeconds(1.0f);
         c.overlay.SetBackground(new Color(0.02f, 0.02f, 0.05f, 0.82f));
         yield return c.overlay.Show(Loc.T("POPRZEDNIA NOC", "LAST NIGHT"),

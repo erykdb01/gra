@@ -20,10 +20,10 @@ public class MainMenu : MonoBehaviour
     CharacterView conductor, ghost;
     Image logoImg, subtitleBg;
     TextMeshProUGUI introText, counterText, hintText;
-    Image polishBtn, englishBtn;
+    Image polishBtn, englishBtn, ukrainianBtn;
     RectTransform menuRoot;
     readonly List<MenuItemFX> items = new List<MenuItemFX>();
-    Sprite logoPl, logoEn;
+    Sprite logoPl, logoEn, logoUk;
 
     bool introRunning = true, skipIntro, starting;
     float idleTime, nextSecret, nextCounter, menuTime, lastMouseMove;
@@ -61,7 +61,7 @@ public class MainMenu : MonoBehaviour
 
         SoundFX fx = SoundFX.Create(gameObject);
         fx.StartAmbience(false);
-        fx.RadioOn(true);
+        fx.RadioOn(false);      // no radio hiss in the menu: only rain, air and distant sounds
         fx.SetAutoMusic(false);
 
         Loc.Changed += Refresh;
@@ -195,15 +195,20 @@ public class MainMenu : MonoBehaviour
         // language buttons
         TextMeshProUGUI l;
         Button pl = UIKit.MakeButton("LangPl", canvas.transform, "PL", new Vector2(90, 56), new Color(0.85f, 0.85f, 0.9f), 28, out l);
-        UIKit.Anchor((RectTransform)pl.transform, UIKit.TR, UIKit.TR, UIKit.TR, new Vector2(-140, -24), new Vector2(90, 56));
+        UIKit.Anchor((RectTransform)pl.transform, UIKit.TR, UIKit.TR, UIKit.TR, new Vector2(-250, -24), new Vector2(90, 56));
         pl.onClick.AddListener(() => Loc.Set(Loc.Language.Polish));
         polishBtn = pl.GetComponent<Image>();
         Button en = UIKit.MakeButton("LangEn", canvas.transform, "EN", new Vector2(90, 56), new Color(0.85f, 0.85f, 0.9f), 28, out l);
-        UIKit.Anchor((RectTransform)en.transform, UIKit.TR, UIKit.TR, UIKit.TR, new Vector2(-30, -24), new Vector2(90, 56));
+        UIKit.Anchor((RectTransform)en.transform, UIKit.TR, UIKit.TR, UIKit.TR, new Vector2(-140, -24), new Vector2(90, 56));
         en.onClick.AddListener(() => Loc.Set(Loc.Language.English));
         englishBtn = en.GetComponent<Image>();
+        Button ua = UIKit.MakeButton("LangUa", canvas.transform, "UA", new Vector2(90, 56), new Color(0.85f, 0.85f, 0.9f), 28, out l);
+        UIKit.Anchor((RectTransform)ua.transform, UIKit.TR, UIKit.TR, UIKit.TR, new Vector2(-30, -24), new Vector2(90, 56));
+        ua.onClick.AddListener(() => Loc.Set(Loc.Language.Ukrainian));
+        ukrainianBtn = ua.GetComponent<Image>();
         polishBtn.gameObject.SetActive(false);
         englishBtn.gameObject.SetActive(false);
+        ukrainianBtn.gameObject.SetActive(false);
 
         // intro text in the middle
         introText = UIKit.Text("Intro", canvas.transform, "", 120, new Color(0.9f, 0.88f, 0.8f, 0f), TextAlignmentOptions.Center);
@@ -254,7 +259,8 @@ public class MainMenu : MonoBehaviour
             Color on = new Color(0.6f, 0.85f, 0.6f);
             Color off = new Color(0.85f, 0.85f, 0.9f);
             polishBtn.color = Loc.IsPolish ? on : off;
-            englishBtn.color = Loc.IsPolish ? off : on;
+            englishBtn.color = Loc.IsEnglish ? on : off;
+            ukrainianBtn.color = Loc.IsUkrainian ? on : off;
         }
     }
 
@@ -269,19 +275,33 @@ public class MainMenu : MonoBehaviour
             int n = SaveSystem.Data.story.night + 1;
             c.extraPl = "  (NOC " + n + ")";
             c.extraEn = "  (NIGHT " + n + ")";
+            c.extraUk = "  (НІЧ " + n + ")";
         }
-        else { c.extraPl = ""; c.extraEn = ""; }
+        else { c.extraPl = ""; c.extraEn = ""; c.extraUk = ""; }
         c.Relabel();
     }
 
     void SetLogo()
     {
-        bool pl = Loc.IsPolish;
-        if (pl && logoPl == null) logoPl = PixelArtExtras.Logo("OSTATNI PERON", new Color32(220, 214, 198, 255), new Color32(150, 20, 20, 255), 13);
-        if (!pl && logoEn == null) logoEn = PixelArtExtras.Logo("THE LAST PLATFORM", new Color32(220, 214, 198, 255), new Color32(150, 20, 20, 255), 13);
-        Sprite s = pl ? logoPl : logoEn;
+        Color32 fill = new Color32(220, 214, 198, 255), blood = new Color32(150, 20, 20, 255);
+        Sprite s;
+        float k;
+        if (Loc.IsPolish)
+        {
+            if (logoPl == null) logoPl = PixelArtExtras.Logo("OSTATNI PERON", fill, blood, 13);
+            s = logoPl; k = 9f;
+        }
+        else if (Loc.IsUkrainian)
+        {
+            if (logoUk == null) logoUk = PixelArtExtras.Logo("ОСТАННІЙ ПЕРОН", fill, blood, 13);
+            s = logoUk; k = 8f;
+        }
+        else
+        {
+            if (logoEn == null) logoEn = PixelArtExtras.Logo("THE LAST PLATFORM", fill, blood, 13);
+            s = logoEn; k = 8f;
+        }
         logoImg.sprite = s;
-        float k = pl ? 9f : 8f;
         logoImg.rectTransform.sizeDelta = new Vector2(s.rect.width * k, s.rect.height * k);
     }
 
@@ -368,6 +388,7 @@ public class MainMenu : MonoBehaviour
         // 5. the menu
         polishBtn.gameObject.SetActive(true);
         englishBtn.gameObject.SetActive(true);
+        ukrainianBtn.gameObject.SetActive(true);
         StartCoroutine(FadeImage(subtitleBg, 1f, 1.2f));
         for (int i = 0; i < items.Count; i++)
         {
@@ -535,12 +556,12 @@ public class MainMenu : MonoBehaviour
     IEnumerator CounterSecret()
     {
         if (counterText == null) yield break;
-        counterText.text = "PASSENGERS: 14";
+        counterText.text = Loc.T("PASAŻEROWIE: 14", "PASSENGERS: 14", "ПАСАЖИРИ: 14");
         counterText.color = new Color(0.85f, 0.3f, 0.28f, 1f);
         train.FlickerFor(0.7f);
         AchievementSystem.Unlock("fourteen");
         yield return new WaitForSeconds(1.1f);
-        counterText.text = Loc.T("PASAŻEROWIE: 13", "PASSENGERS: 13");
+        counterText.text = Loc.T("PASAŻEROWIE: 13", "PASSENGERS: 13", "ПАСАЖИРИ: 13");
         counterText.color = new Color(0.7f, 0.72f, 0.8f, 0.9f);
     }
 
@@ -619,7 +640,7 @@ public class MainMenu : MonoBehaviour
 // One text entry of the main menu: hover slides it to the right and lights it up, click plays a sound.
 public class MenuItemFX : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
-    public string extraPl = "", extraEn = "";
+    public string extraPl = "", extraEn = "", extraUk = "";
 
     MainMenu menu;
     int index;
@@ -648,7 +669,7 @@ public class MenuItemFX : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
     public void Relabel()
     {
-        string text = Loc.T(pl, en) + Loc.T(extraPl, extraEn);
+        string text = Loc.T(pl, en) + Loc.T(extraPl, extraEn, extraUk);
         if (menu != null && menu.IsConfirming(index))
             text = Loc.T("NOWA GRA? KLIKNIJ JESZCZE RAZ", "NEW GAME? CLICK AGAIN");
         label.text = text;

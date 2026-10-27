@@ -47,18 +47,34 @@ public static class PassengerGenerator
         new[] { 24, 50 }, new[] { 32, 62 }, new[] { 25, 50 }, new[] { 40, 65 }, new[] { 40, 70 }, new[] { 30, 60 }
     };
 
-    static readonly string[] pleasEn =
+    static string G(PassengerData p, string m, string f) { return p.female ? f : m; }
+
+    // One plea in all three languages, with the passenger's gender applied.
+    static string MakePlea(PassengerData p, int i)
     {
-        "Please. I have nowhere left to go.", "This train is the last thing I have left.", "My granddaughter is waiting at the station. Just this once.",
-        "I know the documents don't match. But I won't hurt anyone.", "Give a person a chance. It's so cold outside.", "I'm going home. That's all. Please let me in.",
-        "If you don't let me in, I won't survive the night.", "I have already lost everything. Don't take the train too."
-    };
-    static readonly string[] pleas =
+        bool f = p.female;
+        switch (i)
+        {
+            case 0: return Loc.T("Proszę. Nie mam już dokąd wracać.", "Please. I have nowhere left to go.", "Прошу вас. Мені вже нікуди повертатися.");
+            case 1: return Loc.T("Ten pociąg to ostatnia rzecz, która mi została.", "This train is the last thing I have left.", "Цей поїзд — остання річ, що в мене лишилася.");
+            case 2: return Loc.T("Moja wnuczka czeka na stacji. Proszę, tylko ten jeden raz.", "My granddaughter is waiting at the station. Just this once.", "Моя онука чекає на станції. Прошу вас, лише цього разу.");
+            case 3: return Loc.T("Wiem, że dokumenty się nie zgadzają. Ale nikomu nie zrobię krzywdy.", "I know the documents don't match. But I won't hurt anyone.", "Я знаю, що документи не збігаються. Але я нікому не заподію шкоди.");
+            case 4: return Loc.T("Niech pan da człowiekowi szansę. Na zewnątrz jest tak zimno.", "Give a person a chance. It's so cold outside.", "Дайте людині шанс. Надворі така холоднеча.");
+            case 5: return Loc.T("Jadę do domu. Tylko tyle. Proszę mnie wpuścić.", "I'm going home. That's all. Please let me in.", "Я їду додому. Тільки й того. Прошу, пропустіть мене.");
+            case 6: return Loc.T("Jeśli mnie pan nie wpuści, nie przeżyję tej nocy.", "If you don't let me in, I won't survive the night.", "Якщо ви мене не пропустите, я не переживу цієї ночі.");
+            default: return Loc.T(f ? "Straciłam już wszystko. Niech pan nie zabiera mi jeszcze pociągu." : "Straciłem już wszystko. Niech pan nie zabiera mi jeszcze pociągu.",
+                                  "I have already lost everything. Don't take the train too.",
+                                  f ? "Я вже втратила все. Не забирайте в мене ще й поїзд." : "Я вже втратив усе. Не забирайте в мене ще й поїзд.");
+        }
+    }
+    const int PleaCount = 8;
+
+    // female form of a Polish surname (mother of a male passenger)
+    static string FemSurname(string s)
     {
-        "Proszę. Nie mam już dokąd wracać.", "Ten pociąg to ostatnia rzecz, która mi została.", "Moja wnuczka czeka na stacji. Proszę, tylko ten jeden raz.",
-        "Wiem, że dokumenty się nie zgadzają. Ale nikomu nie zrobię krzywdy.", "Niech pan da człowiekowi szansę. Na zewnątrz jest tak zimno.", "Jadę do domu. Tylko tyle. Proszę mnie wpuścić.",
-        "Jeśli mnie pan nie wpuści, nie przeżyję tej nocy.", "Straciłem już wszystko. Niech pan nie zabiera mi jeszcze pociągu."
-    };
+        if (s.EndsWith("ski") || s.EndsWith("cki") || s.EndsWith("dzki")) return s.Substring(0, s.Length - 1) + "a";
+        return s;
+    }
 
     // ---------- the deck: every night shows each look once before repeats ----------
     static readonly List<int> deck = new List<int>();
@@ -137,6 +153,7 @@ public static class PassengerGenerator
         p.storyId = script != null ? script.id : null;
 
         // ----- who is it -----
+        string firstRaw, lastRaw;          // Polish spelling; Loc.Name gives the Ukrainian one
         if (script != null)
         {
             CastPerson c = script.person;
@@ -144,28 +161,29 @@ public static class PassengerGenerator
             p.female = c.female;
             p.scale = c.scale;
             p.age = c.age;
-            p.firstName = c.first;
-            p.lastName = c.last;
+            firstRaw = c.first; lastRaw = c.last;
             p.occupation = Loc.T(c.occPl, c.occEn);
             p.origin = Loc.T(c.originPl, c.originEn);
-            if (script.nameHidden) { p.firstName = Loc.T("Nieznany", "Unknown"); p.lastName = ""; }
-            if (script.useConductorName) { p.firstName = "Jan"; p.lastName = "Ostoja"; }
-            if (c.key == "nodocs") { p.firstName = Loc.T("Nieznany", "Unknown"); p.lastName = ""; }
+            if (script.nameHidden) { firstRaw = null; lastRaw = ""; }
+            if (script.useConductorName) { firstRaw = "Jan"; lastRaw = "Ostoja"; }
+            if (c.key == "nodocs") { firstRaw = null; lastRaw = ""; }
         }
         else
         {
             p.look = NextLook();
             p.female = CharacterArt.IsFemale(p.look);
             p.scale = 1f;
-            p.firstName = p.female ? Pick(femaleNames) : Pick(maleNames);
+            firstRaw = p.female ? Pick(femaleNames) : Pick(maleNames);
             string[] sn = surnames[Random.Range(0, surnames.Length)];
-            p.lastName = p.female ? sn[1] : sn[0];
+            lastRaw = p.female ? sn[1] : sn[0];
             int[] ar = ages[Mathf.Clamp(p.look, 0, ages.Length - 1)];
             p.age = Random.Range(ar[0], ar[1] + 1);
             string[] jb = jobs[Mathf.Clamp(p.look, 0, jobs.Length - 1)];
             p.occupation = Loc.T(jb[0], jb[1]);
-            p.origin = Pick(cities);
+            p.origin = Loc.Name(Pick(cities));
         }
+        p.firstName = firstRaw == null ? Loc.T("Nieznany", "Unknown") : Loc.Name(firstRaw);
+        p.lastName = Loc.Name(lastRaw);
         p.fullName = (p.firstName + " " + p.lastName).Trim();
 
         int dead = truth == PassengerTruth.Dead ? 1 : 0;
@@ -173,7 +191,7 @@ public static class PassengerGenerator
         p.birthDate = Random.Range(1, 29).ToString("00") + "." + Random.Range(1, 13).ToString("00") + "." + p.birthYear;
 
         p.station = script != null ? script.station : Random.Range(1, 13);
-        string stn = p.station <= 12 ? stationNames[p.station] : Loc.T("Ostatnia Stacja", "The Last Station");
+        string stn = p.station <= 12 ? Loc.Name(stationNames[p.station]) : Loc.T("Ostatnia Stacja", "The Last Station");
         p.destination = Loc.T("Stacja ", "Station ") + p.station + " " + stn;
         bool oddTruth = truth == PassengerTruth.Dead || truth == PassengerTruth.NonExistent || truth == PassengerTruth.Echo || truth == PassengerTruth.Unknown;
         p.destinationRegistered = !(oddTruth && Random.value < 0.5f);
@@ -184,7 +202,7 @@ public static class PassengerGenerator
         p.ticketName = p.fullName;
         p.ticketText = Loc.T("Wagon ", "Car ") + Random.Range(1, 6) + "  " + Loc.T("Miejsce ", "Seat ") + Random.Range(1, 60);
         p.illness = DocumentSystem.RandomIllness();
-        p.motherName = (Pick(femaleNames) + " " + p.lastName).Trim();
+        p.motherName = (Loc.Name(Pick(femaleNames)) + " " + Loc.Name(FemSurname(lastRaw))).Trim();
         p.motherDeathYear = p.birthYear - Random.Range(1, 4);
         p.deathYear = Mathf.Min(DocumentSystem.CurrentYear - 1, p.birthYear + Mathf.Max(10, p.age - Random.Range(2, 30)));
         if (dead == 1)
@@ -199,8 +217,8 @@ public static class PassengerGenerator
         if (script == null && truth == PassengerTruth.Alive && day.forgeChance > 0f && Random.value < day.forgeChance)
         {
             string other;
-            do { other = p.female ? Pick(femaleNames) : Pick(maleNames); } while (other == p.firstName);
-            p.ticketName = other + " " + p.lastName;
+            do { other = p.female ? Pick(femaleNames) : Pick(maleNames); } while (Loc.Name(other) == p.firstName);
+            p.ticketName = Loc.Name(other) + " " + p.lastName;
             p.forgedTicket = true;
         }
         if (truth == PassengerTruth.Impostor)
@@ -245,8 +263,7 @@ public static class PassengerGenerator
         else if (!Days.ShouldAdmit(p, day) && Random.value < day.pleaChance)
         {
             p.sympathetic = true;
-            int pi = Random.Range(0, pleas.Length);
-            p.plea = Loc.T(pleas[pi], pleasEn[pi]);
+            p.plea = MakePlea(p, Random.Range(0, PleaCount));
         }
 
         // ----- dialogue -----
@@ -294,59 +311,89 @@ public static class PassengerGenerator
     {
         string city = p.origin;
         string job = p.occupation;
+        bool f = p.female;
+        string he = f ? "she" : "he", his = f ? "her" : "his";
         switch (p.truth)
         {
             case PassengerTruth.Dead:
                 return Pick(new[]
                 {
-                    Loc.T("Zmarł" + (p.female ? "a" : "") + " po długiej chorobie w " + city + ". Nikt nie zgłosił zaginięcia, bo wszyscy wiedzieli.", "Died after a long illness in " + city + ". No one reported a disappearance, because everyone knew."),
-                    Loc.T("Zginął" + (p.female ? "a" : "") + " w wypadku, wracając do domu z pracy (" + job + "). Do dziś próbuje wrócić.", "Died in an accident on the way home from work (" + job + "). Still trying to get home."),
-                    Loc.T("Zasnął" + (p.female ? "a" : "") + " w poczekalni w " + city + " i się nie obudził" + (p.female ? "a" : "") + ".", "Fell asleep in a waiting room in " + city + " and never woke up.")
+                    Loc.T(G(p, "Zmarł", "Zmarła") + " po długiej chorobie w mieście " + city + ". Nikt nie zgłosił zaginięcia, bo wszyscy wiedzieli.",
+                          "Died after a long illness in " + city + ". No one reported a disappearance, because everyone knew.",
+                          G(p, "Помер", "Померла") + " після тривалої хвороби в місті " + city + ". Ніхто не повідомляв про зникнення, бо всі знали."),
+                    Loc.T(G(p, "Zginął", "Zginęła") + " w wypadku, wracając z pracy (" + job + "). Do dziś próbuje wrócić do domu.",
+                          "Died in an accident on the way home from work (" + job + "). Still trying to get home.",
+                          G(p, "Загинув", "Загинула") + " в аварії дорогою з роботи (" + job + "). Досі намагається дістатися додому."),
+                    Loc.T(G(p, "Zasnął", "Zasnęła") + " w poczekalni w mieście " + city + " i już się nie " + G(p, "obudził", "obudziła") + ".",
+                          "Fell asleep in a waiting room in " + city + " and never woke up.",
+                          G(p, "Заснув", "Заснула") + " у залі очікування в місті " + city + " і більше не " + G(p, "прокинувся", "прокинулася") + ".")
                 });
             case PassengerTruth.NonExistent:
                 return Pick(new[]
                 {
-                    Loc.T("W księgach miasta " + city + " nie ma po tej osobie śladu. Świadkowie twierdzą, że nikogo takiego nie widzieli.", "There is no trace of this person in the books of " + city + ". Witnesses say they never saw anyone like that."),
-                    Loc.T("Dawno temu ktoś wykreślił jej wpis w Rejestrze. Papier został, człowiek też.", "Long ago someone struck this person's entry from the Registry. The paper stayed, and so did the person.")
+                    Loc.T("W księgach miasta " + city + " nie ma po tej osobie śladu. Świadkowie twierdzą, że nikogo takiego nie widzieli.",
+                          "There is no trace of this person in the books of " + city + ". Witnesses say they never saw anyone like that.",
+                          "У книгах міста " + city + " немає жодного сліду цієї особи. Свідки стверджують, що нікого такого не бачили."),
+                    Loc.T("Dawno temu ktoś wykreślił z Rejestru wpis o " + G(p, "nim", "niej") + ". Papier został, człowiek też.",
+                          "Long ago someone struck this person's entry from the Registry. The paper stayed, and so did the person.",
+                          "Давно хтось викреслив із Реєстру запис про " + G(p, "нього", "неї") + ". Папір залишився, і людина теж.")
                 });
             case PassengerTruth.Loop:
-                return Loc.T("Jest tu drugi raz. Albo pierwszy. Zależy, z której strony czasu liczyć.", "Is here for the second time. Or the first. Depends which side of time you count from.");
+                return Loc.T(G(p, "Jest tu drugi raz. Albo pierwszy.", "Jest tu drugi raz. Albo pierwszy.") + " Zależy, z której strony czasu liczyć.",
+                             "Is here for the second time. Or the first. Depends which side of time you count from.",
+                             G(p, "Він тут удруге", "Вона тут удруге") + ". Або вперше. Залежить від того, з якого боку часу рахувати.");
             case PassengerTruth.Impostor:
-                return Loc.T("Kupił" + (p.female ? "a" : "") + " dokumenty od kogoś na dworcu w " + city + ". Chce po prostu wyjechać.", "Bought the papers from someone at the station in " + city + ". Just wants to leave.");
+                return Loc.T(G(p, "Kupił", "Kupiła") + " dokumenty od kogoś na dworcu w mieście " + city + ". Chce po prostu wyjechać.",
+                             "Bought the papers from someone at the station in " + city + ". Just wants to leave.",
+                             G(p, "Купив", "Купила") + " документи в когось на вокзалі в місті " + city + ". Просто хоче поїхати.");
             case PassengerTruth.Echo:
-                return Loc.T("Jest wspomnieniem człowieka, którego już nikt nie pamięta poza kimś, kto siedzi w wagonie.", "Is the memory of a person no one recalls except someone sitting in the car.");
+                return Loc.T("Jest wspomnieniem człowieka, którego nikt już nie pamięta poza kimś, kto siedzi w wagonie.",
+                             "Is the memory of a person no one recalls except someone sitting in the car.",
+                             "Це спогад про людину, якої ніхто вже не пам’ятає, окрім когось, хто сидить у вагоні.");
             case PassengerTruth.Unknown:
-                return Loc.T("System nie ma na ten temat żadnej wiedzy.", "The system holds no knowledge about this.");
+                return Loc.T("System nie ma na ten temat żadnej wiedzy.", "The system holds no knowledge about this.", "Система не має про це жодних відомостей.");
             case PassengerTruth.Altered:
-                return Loc.T("Ktoś poprawił dane tej osoby w nocy. Ona sama nie wie, że na papierze jest inna.", "Someone corrected this person's data in the night. They do not know they differ on paper.");
+                return Loc.T("Ktoś nocą poprawił dane tej osoby. " + G(p, "On sam nie wie", "Ona sama nie wie") + ", że na papierze jest kimś innym.",
+                             "Someone corrected this person's data in the night. " + (f ? "She" : "He") + " does not know " + he + " differs on paper.",
+                             "Хтось уночі виправив дані цієї особи. " + G(p, "Він сам не знає", "Вона сама не знає") + ", що на папері є кимось іншим.");
             default:
                 return Pick(new[]
                 {
-                    Loc.T("Wraca z pogrzebu w " + city + ". Pracuje jako " + job + ", mieszka sam" + (p.female ? "a" : "") + ".", "Returns from a funeral in " + city + ". Works as a " + job + ", lives alone."),
-                    Loc.T("Jedzie do rodziny po kłótni. Od lat nie widział" + (p.female ? "a" : "") + " brata.", "Going to see family after an argument. Has not seen a brother for years."),
-                    Loc.T("Jedzie do nowej pracy jako " + job + ". Ma w torbie wszystko, co posiada.", "Going to a new job as a " + job + ". Carries everything they own in a bag."),
-                    Loc.T("Uciekł" + (p.female ? "a" : "") + " z domu w " + city + ". Nikomu nic nie powiedział" + (p.female ? "a" : "") + ".", "Ran away from home in " + city + ". Told no one.")
+                    Loc.T("Wraca z pogrzebu w mieście " + city + ". Z zawodu: " + job + ". Mieszka " + G(p, "sam", "sama") + ".",
+                          "Returns from a funeral in " + city + ". Occupation: " + job + ". Lives alone.",
+                          "Повертається з похорону в місті " + city + ". Фах: " + job + ". Живе " + G(p, "сам", "сама") + "."),
+                    Loc.T("Jedzie do rodziny po kłótni. Od lat nie " + G(p, "widział", "widziała") + " brata.",
+                          "Going to see family after an argument. Has not seen " + his + " brother for years.",
+                          "Їде до родини після сварки. Уже багато років не " + G(p, "бачив", "бачила") + " брата."),
+                    Loc.T("Jedzie do nowej pracy. Ma w torbie wszystko, co posiada.",
+                          "Going to a new job. Carries everything " + he + " owns in a bag.",
+                          "Їде на нове місце роботи. У сумці — усе, що має."),
+                    Loc.T(G(p, "Uciekł", "Uciekła") + " z domu w mieście " + city + ". Nikomu nic nie " + G(p, "powiedział", "powiedziała") + ".",
+                          "Ran away from home in " + city + ". Told no one.",
+                          G(p, "Втік", "Втекла") + " з дому в місті " + city + ". Нікому нічого не " + G(p, "сказав", "сказала") + ".")
                 });
         }
     }
 
     static string MakeSecret(PassengerData p)
     {
+        bool f = p.female;
+        string he = f ? "she" : "he";
         switch (p.truth)
         {
-            case PassengerTruth.Dead:        return Loc.T("Wie, że nie żyje. Boi się, że pan to powie na głos.", "Knows they are dead. Afraid you will say it out loud.");
-            case PassengerTruth.NonExistent: return Loc.T("Nie pamięta dzieciństwa. Pamięta tylko ten peron.", "Has no memory of childhood. Remembers only this platform.");
-            case PassengerTruth.Loop:        return Loc.T("Widział" + (p.female ? "a" : "") + " ten peron w snach, na długo zanim przyjechał" + (p.female ? "a" : "") + ".", "Saw this platform in dreams long before arriving.");
-            case PassengerTruth.Impostor:    return Loc.T("Prawdziwy właściciel dokumentów jest w wagonie 13.", "The real owner of the documents is in car 13.");
-            case PassengerTruth.Echo:        return Loc.T("Nie jest pewn" + (p.female ? "a" : "y") + ", czy jest kimś, czy tylko czyimś zdaniem.", "Is not sure whether they are someone or only someone's sentence.");
-            case PassengerTruth.Unknown:     return Loc.T("Zna pana imię i numer służbowy.", "Knows your name and employee number.");
-            case PassengerTruth.Altered:     return Loc.T("Kiedyś miał" + (p.female ? "a" : "") + " inne nazwisko. Nie pamięta jakie.", "Once had a different name. Cannot remember which.");
+            case PassengerTruth.Dead:        return Loc.T("Wie, że nie żyje. Boi się, że pan to powie na głos.", "Knows " + he + " is dead. Afraid you will say it out loud.", "Знає, що " + G(p, "помер", "померла") + ". Боїться, що ви скажете це вголос.");
+            case PassengerTruth.NonExistent: return Loc.T("Nie pamięta dzieciństwa. Pamięta tylko ten peron.", "Has no memory of childhood. Remembers only this platform.", "Не пам’ятає дитинства. Пам’ятає лише цей перон.");
+            case PassengerTruth.Loop:        return Loc.T(G(p, "Widział", "Widziała") + " ten peron w snach, na długo zanim tu " + G(p, "przyjechał", "przyjechała") + ".", "Saw this platform in dreams long before arriving.", G(p, "Бачив", "Бачила") + " цей перон у снах задовго до того, як сюди " + G(p, "приїхав", "приїхала") + ".");
+            case PassengerTruth.Impostor:    return Loc.T("Prawdziwy właściciel dokumentów jest w wagonie 13.", "The real owner of the documents is in car 13.", "Справжній власник документів — у вагоні 13.");
+            case PassengerTruth.Echo:        return Loc.T("Nie jest pewn" + G(p, "y", "a") + ", czy jest kimś, czy tylko czyimś zdaniem.", "Is not sure whether " + he + " is someone or only someone's sentence.", "Не " + G(p, "впевнений", "впевнена") + ", чи є кимось, чи лише чиїмось реченням.");
+            case PassengerTruth.Unknown:     return Loc.T("Zna pana imię i numer służbowy.", "Knows your name and employee number.", "Знає ваше ім’я та службовий номер.");
+            case PassengerTruth.Altered:     return Loc.T("Kiedyś " + G(p, "miał", "miała") + " inne nazwisko. Nie pamięta jakie.", "Once had a different name. Cannot remember which.", "Колись " + G(p, "мав", "мала") + " інше прізвище. Не пам’ятає, яке.");
             default:
                 return Pick(new[]
                 {
-                    Loc.T("Wiezie w torbie list, którego nie odważy się wysłać.", "Carries a letter in the bag that they dare not send."),
-                    Loc.T("Nie kupił" + (p.female ? "a" : "") + " biletu powrotnego.", "Did not buy a return ticket."),
-                    Loc.T("Ma dług, którego nie da się spłacić pieniędzmi.", "Has a debt that cannot be paid with money.")
+                    Loc.T("Wiezie w torbie list, którego nie odważy się wysłać.", "Carries a letter in the bag that " + he + " dares not send.", "У сумці везе листа, який не наважується відправити."),
+                    Loc.T("Nie " + G(p, "kupił", "kupiła") + " biletu powrotnego.", "Did not buy a return ticket.", "Не " + G(p, "купив", "купила") + " зворотного квитка."),
+                    Loc.T("Ma dług, którego nie da się spłacić pieniędzmi.", "Has a debt that cannot be paid with money.", "Має борг, якого не можна сплатити грошима.")
                 });
         }
     }
@@ -354,19 +401,18 @@ public static class PassengerGenerator
     // ---------- the twist: the last passenger is the conductor ----------
     public static PassengerData GeneratePlayer(DayConfig day)
     {
-        string cond = "Jan Ostoja";
         var p = new PassengerData
         {
             truth = PassengerTruth.Unknown,
             isPlayer = true,
             look = -1,
-            firstName = "Jan", lastName = "Ostoja", fullName = cond,
+            firstName = Loc.Name("Jan"), lastName = Loc.Name("Ostoja"), fullName = Loc.Name("Jan") + " " + Loc.Name("Ostoja"),
             age = 0, occupation = Loc.T("konduktor Linii 13", "Line 13 conductor"),
             origin = Loc.T("Peron 13", "Platform 13"),
             destination = Loc.T("Ostatnia Stacja", "The Last Station"),
             station = 13,
             ticketNo = "LN13-0013", docNo = "K-13-0013",
-            ticketName = cond,
+            ticketName = Loc.Name("Jan") + " " + Loc.Name("Ostoja"),
             ticketText = Loc.T("Wagon 13  Miejsce 13", "Car 13  Seat 13"),
             birthDate = "??.??.19??", birthYear = 1962,
             behaviour = "calm",

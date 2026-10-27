@@ -26,11 +26,15 @@ public class DayConfig
     public string briefingPl, briefingEn;      // shown before the shift
     public string outroPl, outroEn;            // shown after the shift
 
-    public string title { get { return Loc.T(titlePl, titleEn); } }
-    public string rule { get { return Loc.T(rulePl, ruleEn); } }
-    public string briefing { get { return Loc.T(briefingPl, briefingEn); } }
-    public string outro { get { return Loc.T(outroPl, outroEn); } }
-    public string actTitle { get { return Loc.T(actPl, actEn); } }
+    // Ukrainian text of nights built at run time (endless mode). Story nights leave these null:
+    // their Ukrainian text comes from the UkStrings table, keyed by the Polish text.
+    public string actUk, titleUk, ruleUk, briefingUk, outroUk;
+
+    public string title { get { return Loc.T(titlePl, titleEn, titleUk); } }
+    public string rule { get { return Loc.T(rulePl, ruleEn, ruleUk); } }
+    public string briefing { get { return Loc.T(briefingPl, briefingEn, briefingUk); } }
+    public string outro { get { return Loc.T(outroPl, outroEn, outroUk); } }
+    public string actTitle { get { return Loc.T(actPl, actEn, actUk); } }
 
     public int passengers = 13;
     public int maxMistakes = 4;                // -1 = unlimited

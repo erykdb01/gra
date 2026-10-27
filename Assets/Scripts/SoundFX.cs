@@ -1,9 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// All sound is synthesised in code: ambience (rain, hum, rails, radio), effects (stamp, paper, doors, footsteps,
-// knocking, stingers, heartbeat) and five music moods (menu, shift, tension, horror, ending).
-// Nothing is loaded from files. Clips are built the first time they are needed.
+// All sound is synthesised in code. This class owns the one-shot effects, the radio, the heartbeat and the music;
+// the looping ambience (rain, station, train, room tone, low unease, far-away sounds) lives in AmbienceDirector.
+// Every sound belongs to a Bus (see AudioBus) with its own level, and accents duck the beds so nothing piles up.
+// Comfort rules: no steady high tones, no sudden loud jumps, every loop is band-limited and seamless.
 public class SoundFX : MonoBehaviour
 {
     public static SoundFX I;
@@ -11,10 +12,11 @@ public class SoundFX : MonoBehaviour
     const int Rate = 44100;
     const int LoRate = 22050;
 
-    AudioSource oneShot, rain, hum, rail, radio, heart, musicA, musicB;
-    AudioDistortionFilter humDist, railDist;
+    AudioSource oneShot, dark, radio, heart, musicA, musicB;
+    AudioLowPassFilter musicLpA, musicLpB;
+    AmbienceDirector amb;
     AudioClip stampClip, goodClip, badClip, clickClip, hornClip, whistleClip, paperClip, doorClip, tickClip, breathClip, whisperClip;
-    AudioClip knockClip, knock13Clip, powerDownClip, powerUpClip, stepClip, heartClip, rainClip, humClip, railClip, radioClip;
+    AudioClip knockClip, knock13Clip, powerDownClip, powerUpClip, stepClip, heartClip, radioClip;
     readonly Dictionary<string, AudioClip> music = new Dictionary<string, AudioClip>();
     readonly Dictionary<string, AudioClip> stingers = new Dictionary<string, AudioClip>();
 
@@ -39,7 +41,7 @@ public class SoundFX : MonoBehaviour
         if (I == this) I = null;
     }
 
-    AudioSource NewSource(string name, bool loop, out AudioDistortionFilter dist, bool withDistortion)
+    AudioSource NewSource(string name, bool loop)
     {
         var go = new GameObject(name);
         go.transform.SetParent(transform, false);
@@ -47,29 +49,33 @@ public class SoundFX : MonoBehaviour
         a.playOnAwake = false;
         a.loop = loop;
         a.spatialBlend = 0f;
-        dist = null;
-        if (withDistortion)
-        {
-            dist = go.AddComponent<AudioDistortionFilter>();
-            dist.distortionLevel = 0f;
-        }
         return a;
     }
+
+    public AmbienceDirector Ambience { get { return amb; } }
 
     void Init()
     {
         if (FindAnyObjectByType<AudioListener>() == null && Camera.main != null)
             Camera.main.gameObject.AddComponent<AudioListener>();
 
-        AudioDistortionFilter none;
-        oneShot = NewSource("SFX", false, out none, false);
-        rain = NewSource("Rain", true, out none, false);
-        hum = NewSource("Hum", true, out humDist, true);
-        rail = NewSource("Rail", true, out railDist, true);
-        radio = NewSource("Radio", true, out none, false);
-        heart = NewSource("Heartbeat", true, out none, false);
-        musicA = NewSource("MusicA", true, out none, false);
-        musicB = NewSource("MusicB", true, out none, false);
+        oneShot = NewSource("SFX", false);
+        // accents of the horror layer (stingers, knocks, whispers, breath) go through a soft low-pass and a little room
+        dark = NewSource("SFX_Dark", false);
+        dark.gameObject.AddComponent<AudioLowPassFilter>().cutoffFrequency = 5500f;
+        AudioReverbFilter rv = dark.gameObject.AddComponent<AudioReverbFilter>();
+        rv.reverbPreset = AudioReverbPreset.Room;
+        radio = NewSource("Radio", true);
+        radio.gameObject.AddComponent<AudioLowPassFilter>().cutoffFrequency = 3000f;
+        heart = NewSource("Heartbeat", true);
+        musicA = NewSource("MusicA", true);
+        musicB = NewSource("MusicB", true);
+        musicLpA = musicA.gameObject.AddComponent<AudioLowPassFilter>(); musicLpA.cutoffFrequency = 4500f;
+        musicLpB = musicB.gameObject.AddComponent<AudioLowPassFilter>(); musicLpB.cutoffFrequency = 4500f;
+
+        amb = gameObject.AddComponent<AmbienceDirector>();
+        amb.hornProvider = () => Horn_();
+        AudioDebug.Create(this);
 
         ApplyVolumes();
     }
@@ -80,19 +86,27 @@ public class SoundFX : MonoBehaviour
         SettingsData s = SaveSystem.Data.settings;
         sfxVol = s.sfx;
         musicVol = s.music;
+        if (amb != null) amb.sfxVol = sfxVol;
         RefreshLoops();
     }
 
     void RefreshLoops()
     {
-        rain.volume = 0.32f * sfxVol;
-        hum.volume = (0.30f + 0.15f * stress01) * sfxVol;
-        rail.volume = (0.16f + 0.3f * stress01) * sfxVol;
-        radio.volume = 0.12f * sfxVol;
-        heart.volume = Mathf.Clamp01((stress01 - 0.45f) * 1.6f) * 0.9f * sfxVol;
+        radio.volume = 0.09f * sfxVol * AudioBus.Get(Bus.Horror);
+        heart.volume = Mathf.Clamp01((stress01 - 0.45f) * 1.6f) * 0.7f * sfxVol * AudioBus.Get(Bus.Horror);
         AudioSource cur = musicOnA ? musicA : musicB;
-        cur.volume = 0.42f * musicVol * musicFade;
+        cur.volume = MusicLevel(musicName) * musicFade;
     }
+
+    // music level for a mood: the menu music stays well below the rain
+    float MusicLevel(string mood)
+    {
+        float k = mood == "menu" ? 0.45f : (mood == "horror" ? 0.85f : 1f);
+        return 0.42f * musicVol * k * AudioBus.Get(Bus.Music);
+    }
+
+    // called by the debug panel after a bus level changed
+    public void RefreshBuses() { RefreshLoops(); }
 
     // ---------------- synthesis helpers ----------------
 
@@ -146,16 +160,11 @@ public class SoundFX : MonoBehaviour
 
     AudioClip Heart_() { return Clip(ref heartClip, () => Make("heart", 1.0f, LoRate, t => { float a = Sin(58f, t) * Mathf.Exp(-t * 18f); float d = t - 0.24f; float b = d > 0f ? Sin(48f, d) * Mathf.Exp(-d * 22f) * 0.7f : 0f; return (a + b) * 0.9f; })); }
 
-    // 6-second seamless rain: filtered noise with tiny drops.
-    AudioClip Rain_() { return Clip(ref rainClip, () => { var r = new System.Random(9); float lp = 0f, lp2 = 0f; return Make("rain", 6f, LoRate, t => { float n = Noise(r); lp += (n - lp) * 0.45f; lp2 += (lp - lp2) * 0.05f; float drop = r.NextDouble() < 0.0025 ? Noise(r) * 0.6f : 0f; return (lp - lp2) * 0.75f + drop; }); }); }
 
-    // 10-second drone; every frequency has an integer number of cycles in the loop.
-    AudioClip Hum_() { return Clip(ref humClip, () => Make("hum", 10f, LoRate, t => 0.10f * Sin(50f, t) * (0.7f + 0.3f * Sin(0.2f, t)) + 0.06f * Sin(100f, t) + 0.04f * Sin(150f, t) * (0.6f + 0.4f * Sin(0.3f, t)) + 0.012f * Sin(3000f, t) * (0.5f + 0.5f * Sin(0.1f, t)))); }
 
-    AudioClip Rail_() { return Clip(ref railClip, () => { var rr = new System.Random(5); float lp = 0f; return Make("rail", 2f, LoRate, t => { float n = Noise(rr); lp += (n - lp) * 0.03f; float beat = t % 0.5f; float clack = 0f; if (beat < 0.03f) clack = Noise(rr) * (1f - beat / 0.03f); else if (beat > 0.11f && beat < 0.14f) clack = Noise(rr) * (1f - (beat - 0.11f) / 0.03f) * 0.7f; return lp * 2.5f + clack * 0.25f; }); }); }
 
     // 12-second radio: hiss, dial sweeps, a distant voice-like murmur and morse beeps.
-    AudioClip Radio_() { return Clip(ref radioClip, () => { var r = new System.Random(10); float lp = 0f; return Make("radio", 12f, LoRate, t => { lp += (Noise(r) - lp) * 0.7f; float hiss = lp * 0.25f; float sweep = 0f; float ph = t % 6f; if (ph > 2f && ph < 3.5f) sweep = Sin(Mathf.Lerp(300f, 1400f, (ph - 2f) / 1.5f), t) * 0.15f; float mur = Sin(180f + 40f * Sin(3f, t), t) * Mathf.Clamp01(Sin(0.5f, t)) * 0.10f * (ph > 3.5f && ph < 5.5f ? 1f : 0f); float beep = (((int)(t * 6f)) % 7 == 0 && ph > 5.5f) ? Sin(900f, t) * 0.12f : 0f; return hiss + sweep + mur + beep; }); }); }
+    AudioClip Radio_() { return Clip(ref radioClip, () => { var r = new System.Random(10); float lp = 0f; return Make("radio", 12f, LoRate, t => { lp += (Noise(r) - lp) * 0.3f; float hiss = lp * 0.16f; float sweep = 0f; float ph = t % 6f; if (ph > 2f && ph < 3.5f) sweep = Sin(Mathf.Lerp(300f, 1000f, (ph - 2f) / 1.5f), t) * 0.07f * Mathf.Sin(Mathf.PI * (ph - 2f) / 1.5f); float mur = Sin(180f + 40f * Sin(3f, t), t) * Mathf.Clamp01(Sin(0.5f, t)) * 0.09f * (ph > 3.5f && ph < 5.5f ? 1f : 0f); float beep = (((int)(t * 6f)) % 7 == 0 && ph > 5.5f) ? Sin(700f, t) * 0.05f : 0f; return hiss + sweep + mur + beep; }); }); }
 
     // Stingers: low cluster with a noise swell. Intensity 0..1.
     AudioClip Stinger_(int variant)
@@ -218,7 +227,7 @@ public class SoundFX : MonoBehaviour
                     float pulse = Mathf.Pow(Mathf.Max(0f, Sin(1f, t)), 2f);
                     float sub = 0.16f * Sin(55f, t) * (0.5f + 0.5f * pulse);
                     float tri = 0.05f * Sin(110f, t) + 0.05f * Sin(155.5f, t);
-                    float rise = 0.03f * Sin(880f, t) * (0.5f + 0.5f * Sin(0.25f, t)) * (0.5f + 0.5f * Sin(6f, t));
+                    float rise = 0.014f * Sin(440f, t) * (0.5f + 0.5f * Sin(0.25f, t)) * (0.5f + 0.5f * Sin(6f, t));
                     return sub + tri + rise;
                 });
             case "horror":
@@ -230,7 +239,7 @@ public class SoundFX : MonoBehaviour
                     float beat = 0.06f * (Sin(100f, t) + Sin(106f, t));
                     float b2 = 0.04f * (Sin(150f, t) + Sin(159f, t));
                     float swell = lp * 1.2f * (0.5f + 0.5f * Sin(0.125f, t));
-                    float scrape = (t > 9f && t < 10.5f) ? Sin(2200f + 300f * Sin(3f, t), t) * 0.02f * Mathf.Sin(Mathf.PI * (t - 9f) / 1.5f) : 0f;
+                    float scrape = (t > 9f && t < 10.5f) ? Sin(1300f + 200f * Sin(3f, t), t) * 0.010f * Mathf.Sin(Mathf.PI * (t - 9f) / 1.5f) : 0f;
                     return beat + b2 + swell * 0.6f + scrape;
                 });
             }
@@ -269,12 +278,14 @@ public class SoundFX : MonoBehaviour
             AudioClip c;
             if (!music.TryGetValue(name, out c)) { c = BuildMusic(name); music[name] = c; }
             to.clip = c;
+            AudioLowPassFilter lpf = to == musicA ? musicLpA : musicLpB;
+            if (lpf != null) lpf.cutoffFrequency = name == "menu" ? 1800f : 4500f;
             to.volume = 0f;
             to.Play();
         }
 
         float fromStart = from.volume;
-        float target = 0.42f * musicVol;
+        float target = MusicLevel(name);
         for (float e = 0f; e < 2.5f; e += Time.unscaledDeltaTime)
         {
             float k = e / 2.5f;
@@ -290,20 +301,28 @@ public class SoundFX : MonoBehaviour
 
     // ---------------- ambience ----------------
 
+    // withTrain = true in the booth (the game), false in the main menu.
     public void StartAmbience(bool withTrain)
     {
-        if (rain.clip == null) rain.clip = Rain_();
-        if (hum.clip == null) hum.clip = Hum_();
-        if (rail.clip == null) rail.clip = Rail_();
         if (radio.clip == null) radio.clip = Radio_();
         if (heart.clip == null) heart.clip = Heart_();
-        if (!rain.isPlaying) rain.Play();
-        if (!hum.isPlaying) hum.Play();
-        if (withTrain && !rail.isPlaying) rail.Play();
         if (!radio.isPlaying) radio.Play();
         if (!heart.isPlaying) heart.Play();
+        radio.mute = true;
+        amb.sfxVol = sfxVol;
+        amb.Begin(withTrain);
+        amb.SetTrainPresent(true);
+        amb.SetTrainState(TrainAudioState.Stopped);
         RefreshLoops();
     }
+
+    // layer controls used by the game
+    public void SetTrainState(TrainAudioState st) { amb.SetTrainState(st); }
+    public void SetTrainPresent(bool p) { amb.SetTrainPresent(p); }
+    public void SetNight(int n) { amb.SetNight(n); }
+    public void OnPassenger(PassengerTruth t, bool isPlayer) { amb.OnPassenger(t, isPlayer); }
+    public void SetEventDrone(float v) { amb.SetEventDrone(v); }
+    public void Duck(float amount, float hold) { amb.Duck(amount, hold); }
 
     // The radio is only on in the menu and during some events.
     public void RadioOn(bool on) { radio.mute = !on; }
@@ -323,15 +342,8 @@ public class SoundFX : MonoBehaviour
         s01 = Mathf.Clamp01(s01);
         bool crossed = (stress01 < 0.35f) != (s01 < 0.35f) || (stress01 < 0.7f) != (s01 < 0.7f);
         stress01 = s01;
-        if (hum != null)
-        {
-            hum.pitch = 1f - 0.12f * s01;
-            rail.pitch = 1f + 0.25f * s01;
-            bool fx = SaveSystem.Data.settings.horrorEffects;
-            if (humDist != null) humDist.distortionLevel = fx ? Mathf.Clamp01((s01 - 0.5f) * 1.2f) : 0f;
-            if (railDist != null) railDist.distortionLevel = fx ? Mathf.Clamp01((s01 - 0.6f)) : 0f;
-            RefreshLoops();
-        }
+        if (amb != null) amb.SetStress(s01);
+        RefreshLoops();
         if (crossed) UpdateAutoMusic();
     }
 
@@ -344,41 +356,46 @@ public class SoundFX : MonoBehaviour
             if (nextBreath <= 0f)
             {
                 nextBreath = Mathf.Lerp(4.5f, 2.2f, (stress01 - 0.7f) / 0.3f) + Random.Range(0f, 1.2f);
-                oneShot.pitch = Random.Range(0.85f, 1f);
-                oneShot.PlayOneShot(Breath_(), 0.5f * sfxVol);
+                dark.pitch = Random.Range(0.85f, 1f);
+                dark.PlayOneShot(Breath_(), 0.4f * sfxVol * AudioBus.Get(Bus.Dialogue));
             }
         }
     }
 
     // ---------------- one-shots ----------------
 
-    void Play(AudioClip c, float vol, float pitch = 1f)
+    void Play(AudioClip c, float vol, float pitch, Bus bus, bool moody = false, float duck = 0f)
     {
-        if (oneShot == null || c == null) return;
-        oneShot.pitch = pitch;
-        oneShot.PlayOneShot(c, vol * sfxVol);
+        AudioSource src = moody ? dark : oneShot;
+        if (src == null || c == null) return;
+        src.pitch = pitch;
+        // never louder than 0.85 of full scale: no sudden painful peaks
+        src.PlayOneShot(c, Mathf.Min(0.85f, vol * sfxVol * AudioBus.Get(bus)));
+        if (duck > 0f && amb != null) amb.Duck(duck, 0.5f);
     }
 
-    public void Stamp() { Play(Stamp_(), 0.95f, Random.Range(0.94f, 1.02f)); }
-    public void Good() { Play(Good_(), 0.6f); }
-    public void Bad() { Play(Bad_(), 0.7f); }
-    public void Horn() { Play(Horn_(), 0.6f); }
-    public void Whistle() { Play(Whistle_(), 0.6f); }
-    public void Click() { Play(Click_(), 0.7f, Random.Range(0.9f, 1.15f)); }
-    public void Paper() { Play(Paper_(), 0.8f, Random.Range(0.9f, 1.15f)); }
-    public void Door() { Play(Door_(), 0.8f); }
-    public void Tick() { Play(Tick_(), 0.25f, Random.Range(0.95f, 1.05f)); }
-    public void Footstep() { Play(Step_(), 0.5f, Random.Range(0.8f, 1.2f)); }
-    public void Knock() { Play(Knock_(), 0.9f); }
-    public void KnockThirteen() { Play(Knock13_(), 0.9f); }
-    public void PowerDown() { Play(PowerDown_(), 0.8f); }
-    public void PowerUp() { Play(PowerUp_(), 0.8f); }
-    public void Whisper() { Play(Whisper_(), 0.7f, Random.Range(0.85f, 1.1f)); }
-    public void Breath() { Play(Breath_(), 0.5f); }
+    public void Stamp() { Play(Stamp_(), 0.85f, Random.Range(0.94f, 1.02f), Bus.Stamp, false, 0.5f); }
+    public void Good() { Play(Good_(), 0.5f, 1f, Bus.Stamp); }
+    public void Bad() { Play(Bad_(), 0.6f, 1f, Bus.Stamp); }
+    public void Horn() { Play(Horn_(), 0.55f, 1f, Bus.Train, false, 0.3f); }
+    public void Whistle() { Play(Whistle_(), 0.45f, 1f, Bus.Train, false, 0.3f); }
+    public void Click() { Play(Click_(), 0.6f, Random.Range(0.9f, 1.15f), Bus.UI); }
+    public void Paper() { Play(Paper_(), 0.8f, Random.Range(0.9f, 1.15f), Bus.Documents); }
+    public void Door() { Play(Door_(), 0.75f, 1f, Bus.Train, false, 0.3f); }
+    public void Tick() { Play(Tick_(), 0.22f, Random.Range(0.95f, 1.05f), Bus.UI); }
+    public void TypeTick() { Play(Tick_(), 0.16f, Random.Range(0.9f, 1.1f), Bus.Dialogue); }
+    public void Footstep() { Play(Step_(), 0.5f, Random.Range(0.8f, 1.2f), Bus.Footsteps); }
+    public void Knock() { Play(Knock_(), 0.8f, 1f, Bus.Horror, true, 0.4f); }
+    public void KnockThirteen() { Play(Knock13_(), 0.8f, 1f, Bus.Horror, true, 0.4f); }
+    public void PowerDown() { Play(PowerDown_(), 0.7f, 1f, Bus.Station, true, 0.3f); }
+    public void PowerUp() { Play(PowerUp_(), 0.7f, 1f, Bus.Station, true, 0.3f); }
+    public void Whisper() { Play(Whisper_(), 0.6f, Random.Range(0.85f, 1.1f), Bus.Horror, true); }
+    public void Breath() { Play(Breath_(), 0.45f, 1f, Bus.Dialogue, true); }
 
     public void Stinger(float intensity)
     {
         if (!SaveSystem.Data.settings.horrorEffects) return;
-        Play(Stinger_(Random.Range(0, 3)), Mathf.Clamp01(0.25f + intensity * 0.75f));
+        // capped and softened: it should unsettle, not hurt
+        Play(Stinger_(Random.Range(0, 3)), 0.2f + Mathf.Clamp01(intensity) * 0.45f, 1f, Bus.Horror, true, 0.6f);
     }
 }

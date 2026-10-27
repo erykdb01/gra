@@ -79,18 +79,19 @@ public class UIController : MonoBehaviour
         if (messageText != null) messageText.text = s;
     }
 
-    public static string TruthName(PassengerTruth t)
+    // The hidden truth as an adjective / noun that agrees with the passenger's gender.
+    public static string TruthName(PassengerTruth t, bool female = false)
     {
         switch (t)
         {
-            case PassengerTruth.Alive:       return Loc.T("żywy", "alive");
-            case PassengerTruth.Dead:        return Loc.T("zmarły", "dead");
-            case PassengerTruth.NonExistent: return Loc.T("nieistniejący", "non-existent");
-            case PassengerTruth.Altered:     return Loc.T("zmieniony", "altered");
-            case PassengerTruth.Loop:        return Loc.T("pętla", "loop");
-            case PassengerTruth.Impostor:    return Loc.T("podszywacz", "impostor");
-            case PassengerTruth.Echo:        return Loc.T("echo", "echo");
-            default:                         return Loc.T("nieznany", "unknown");
+            case PassengerTruth.Alive:       return Loc.T(female ? "żywa" : "żywy", "alive", female ? "жива" : "живий");
+            case PassengerTruth.Dead:        return Loc.T(female ? "zmarła" : "zmarły", "dead", female ? "мертва" : "мертвий");
+            case PassengerTruth.NonExistent: return Loc.T(female ? "nieistniejąca" : "nieistniejący", "non-existent", female ? "неіснуюча" : "неіснуючий");
+            case PassengerTruth.Altered:     return Loc.T(female ? "zmieniona" : "zmieniony", "altered", female ? "змінена" : "змінений");
+            case PassengerTruth.Loop:        return Loc.T("pętla", "loop", "петля");
+            case PassengerTruth.Impostor:    return Loc.T(female ? "podszywaczka" : "podszywacz", "impostor", female ? "самозванка" : "самозванець");
+            case PassengerTruth.Echo:        return Loc.T("echo", "echo", "відлуння");
+            default:                         return Loc.T(female ? "nieznana" : "nieznany", "unknown", female ? "невідома" : "невідомий");
         }
     }
 }

@@ -195,7 +195,7 @@ public class DialoguePanel : MonoBehaviour
             {
                 last = n;
                 speech.maxVisibleCharacters = n;
-                if (n % 4 == 0 && SoundFX.I != null) SoundFX.I.Tick();
+                if (n % 4 == 0 && SoundFX.I != null) SoundFX.I.TypeTick();
             }
             yield return null;
         }
