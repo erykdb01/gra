@@ -1,0 +1,197 @@
+---
+config:
+  layout: elk
+  theme: base
+  themeVariables:
+    fontFamily: Inter, Segoe UI, Arial
+    fontSize: 15px
+    primaryColor: "#FAFAF8"
+    primaryBorderColor: "#9C9A92"
+    primaryTextColor: "#2C2C2A"
+    lineColor: "#7A7975"
+  class:
+    hideEmptyMembersBox: true
+---
+classDiagram
+  direction TB
+
+  class GameManager {
+    -nightIndex : int
+    -day : DayConfig
+    -current : PassengerData
+    -report : ShiftReport
+    -streak : int
+    +Admit()
+    +Deny()
+    -PlayNight()
+    -HandlePassenger(index : int)
+    -Resolve(admit : bool)
+    -CheckFailure()
+    -FinishNight()
+  }
+
+  class DayConfig {
+    +act : int
+    +rulePl : string
+    +passengers : int
+    +maxMistakes : int
+    +allow : bool[8]
+    +docMask : int
+    +timeLimit : float
+    +finalDay : bool
+    +Has(t : DocumentType) bool
+  }
+
+  class PassengerData {
+    +truth : PassengerTruth
+    +fullName : string
+    +birthDate : string
+    +ticketNo : string
+    +forgedTicket : bool
+    +orderState : int
+    +storyId : string
+    +DisplayName : string
+  }
+
+  class DocumentData {
+    +type : DocumentType
+    +number : string
+    +stamp : string
+    +available : bool
+  }
+
+  class DocLine {
+    +label : string
+    +value : string
+    +anomaly : string
+    +hidden : bool
+    +minSkill : int
+  }
+
+  class QA {
+    +question : string
+    +answer : string
+    +kind : int
+    +priority : int
+    +minAuthority : int
+    +used : bool
+  }
+
+  class PassengerGenerator {
+    <<static>>
+    +ForSlot(day : DayConfig, index : int) PassengerData
+    +Generate(truth, day, script) PassengerData
+  }
+
+  class DocumentSystem {
+    <<static>>
+    +Build(p : PassengerData, day : DayConfig)
+    +Query(p : PassengerData, q : int, anomaly : string) string
+  }
+
+  class DocumentInspector {
+    -passenger : PassengerData
+    +Open(onClosed, start : DocumentType)
+    +Close()
+    -Scan()
+    -CheckSignature()
+    -CheckPhoto()
+    -Query(q : int)
+  }
+
+  class DialogueManager {
+    -passenger : PassengerData
+    +Asked : int
+    +Begin(p : PassengerData)
+    +Offered() List~QA~
+    +Ask(q : QA) string
+  }
+
+  class AnomalySystem {
+    <<static>>
+    +FoundThisShift : int
+    +Discover(id : string, via : Skill) bool
+  }
+
+  class PlayerStats {
+    <<static>>
+    +Conscience : int
+    +Discipline : int
+    +Stress : int
+    +Reputation : int
+    +AddStress(raw : int) int
+    +AddDiscipline(d : int)
+    +AddReputation(d : int)
+  }
+
+  class TrainSystem {
+    +Integrity : float
+    +Temperature : float
+    +Electricity : float
+    +Pressure : float
+    +Signal : float
+    +Destroyed : bool
+    +OnDecision(p, admitted : bool, correct : bool)
+  }
+
+  class StoryManager {
+    <<static>>
+    +Begin() int
+    +Night(index : int) DayConfig
+    +Commit(nextNight : int, integrity : int)
+    +CalculateEnding(admitted : bool) string
+  }
+
+  class SaveSystem {
+    <<static>>
+    -data : SaveData
+    +Load()
+    +Save()
+    +ResetStory()
+  }
+
+  class SaveData {
+    +version : int
+    +codex : List~string~
+    +achievements : List~string~
+    +endings : List~string~
+  }
+
+  class StoryProgress {
+    +night : int
+    +conscience : int
+    +discipline : int
+    +stress : int
+    +flags : List~string~
+    +skillXp : int[5]
+  }
+
+  class ShiftReport {
+    +passengers : int
+    +correct : int
+    +mistakes : int
+    +score : int
+    +bestStreak : int
+    +Perfect : bool
+  }
+
+  GameManager "1" -- "1" DayConfig : gra według
+  GameManager "1" -- "0..1" PassengerData : obsługuje
+  GameManager "1" *-- "1" ShiftReport : liczy
+  GameManager "1" *-- "1" DocumentInspector : tworzy
+  GameManager "1" *-- "1" DialogueManager : tworzy
+  GameManager "1" *-- "1" TrainSystem : steruje
+  GameManager "1" -- "1" PlayerStats : zmienia
+  PassengerData "1" *-- "1..*" DocumentData : ma
+  DocumentData "1" *-- "1..*" DocLine : składa się z
+  PassengerData "1" *-- "0..*" QA : ma pytania
+  PassengerGenerator "1" -- "0..*" PassengerData : generuje
+  DocumentSystem "1" -- "0..*" DocumentData : buduje
+  DocumentInspector "1" -- "0..1" PassengerData : sprawdza
+  DocumentInspector "1" -- "1" AnomalySystem : zgłasza
+  DialogueManager "1" -- "0..1" PassengerData : przesłuchuje
+  DialogueManager "1" -- "1" AnomalySystem : zgłasza
+  StoryManager "1" -- "1..*" DayConfig : dostarcza
+  StoryManager "1" -- "1" SaveSystem : zapisuje przez
+  SaveSystem "1" *-- "1" SaveData : przechowuje
+  SaveData "1" *-- "1" StoryProgress : zawiera

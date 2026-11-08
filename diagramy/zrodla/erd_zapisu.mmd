@@ -1,0 +1,87 @@
+---
+config:
+  layout: elk
+  theme: base
+  themeVariables:
+    fontFamily: Inter, Segoe UI, Arial
+    primaryColor: "#FAFAF8"
+    primaryBorderColor: "#9C9A92"
+    lineColor: "#6B6A65"
+    tertiaryColor: "#FFFFFF"
+---
+erDiagram
+  noc {
+    int id PK
+  }
+  flaga {
+    varchar id PK
+  }
+  wybor_wydarzenia {
+    varchar id PK
+  }
+  wpis_kodeksu {
+    varchar id PK
+  }
+  osiagniecie {
+    varchar id PK
+  }
+  zapis {
+    int id PK
+    varchar tryb
+    int biezaca_noc FK
+    int dyscyplina
+    int sumienie
+    int stres
+    int reputacja
+    int integralnosc_pociagu
+    int rekord_punktow
+    int najlepszy_poziom
+    int najdluzsza_seria
+    varchar zaktualizowano
+  }
+  zapis_flaga {
+    int id_zapisu PK, FK
+    varchar id_flagi PK, FK
+    int wartosc
+  }
+  zapis_osiagniecie {
+    int id_zapisu PK, FK
+    varchar id_osiagniecia PK, FK
+    varchar data_zdobycia
+  }
+  zapis_kodeks {
+    int id_zapisu PK, FK
+    varchar id_wpisu PK, FK
+  }
+  zapis_wybor {
+    int id_zapisu PK, FK
+    varchar id_wyboru PK, FK
+  }
+  decyzja {
+    int id PK
+    int id_zapisu FK
+    int id_nocy FK
+    int slot
+    varchar werdykt
+    int poprawna
+    varchar zlamana_zasada
+    int zmiana_stresu
+  }
+  zapis_umiejetnosc {
+    int id_zapisu PK, FK
+    varchar umiejetnosc PK
+    int poziom
+    int xp
+  }
+  noc |o--o{ zapis : "wskazuje"
+  zapis ||--o{ zapis_flaga : "ma flagi"
+  flaga ||--o{ zapis_flaga : "dotyczy"
+  zapis ||--o{ zapis_osiagniecie : "zdobyto"
+  osiagniecie ||--o{ zapis_osiagniecie : "dotyczy"
+  zapis ||--o{ zapis_kodeks : "odkryto"
+  wpis_kodeksu ||--o{ zapis_kodeks : "dotyczy"
+  zapis ||--o{ zapis_wybor : "wybrano"
+  wybor_wydarzenia ||--o{ zapis_wybor : "dotyczy"
+  zapis |o--o{ decyzja : "rejestruje"
+  noc |o--o{ decyzja : "podjęta w"
+  zapis ||--o{ zapis_umiejetnosc : "rozwija"

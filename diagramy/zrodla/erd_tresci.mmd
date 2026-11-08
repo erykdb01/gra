@@ -1,0 +1,185 @@
+---
+config:
+  layout: elk
+  theme: base
+  themeVariables:
+    fontFamily: Inter, Segoe UI, Arial
+    primaryColor: "#FAFAF8"
+    primaryBorderColor: "#9C9A92"
+    lineColor: "#6B6A65"
+    tertiaryColor: "#FFFFFF"
+---
+erDiagram
+  akt {
+    int id PK
+    varchar tytul_pl
+    varchar tytul_en
+    varchar tytul_uk
+  }
+  noc {
+    int id PK
+    int id_aktu FK
+    varchar tytul_pl
+    varchar tytul_en
+    varchar tytul_uk
+    varchar zasada_pl
+    varchar zasada_en
+    varchar zasada_uk
+    varchar briefing_pl
+    varchar briefing_en
+    varchar briefing_uk
+    varchar data_w_grze
+    varchar outro_pl
+    varchar outro_en
+    int maks_bledow
+  }
+  flaga {
+    varchar id PK
+    varchar opis
+    int wartosc_domyslna
+    varchar zrodlo
+    varchar notatka
+  }
+  pasazer {
+    varchar id PK
+    varchar imie_nazwisko
+    varchar data_urodzenia
+    varchar nr_dowodu
+    varchar prawda
+    int postac_powracajaca
+    int wiek
+    varchar plec
+    varchar zawod_pl
+    varchar zawod_en
+    varchar pochodzenie_pl
+    varchar pochodzenie_en
+    varchar kodeks_id
+    varchar notatka
+  }
+  pasazer_w_nocy {
+    int id_nocy PK, FK
+    int slot PK
+    varchar id_pasazera FK
+    varchar id_scenariusza
+  }
+  typ_dokumentu {
+    varchar kod PK
+    varchar nazwa_pl
+    varchar nazwa_en
+    varchar nazwa_uk
+    int odblokowanie_noc FK
+    int bit
+  }
+  dokument_pasazera {
+    varchar id PK
+    varchar id_pasazera FK
+    varchar typ FK
+    varchar wskazowka_pl
+    varchar wskazowka_en
+    varchar wskazowka_uk
+    varchar zrodlo
+  }
+  rejestr {
+    varchar id_osoby PK
+    varchar id_pasazera FK
+    varchar status
+    varchar data_zgonu
+    varchar notatka_pl
+    varchar notatka_en
+  }
+  pytanie_dialogowe {
+    int id PK
+    varchar kod
+    varchar id_pasazera FK
+    varchar prawda
+    varchar pytanie_pl
+    varchar pytanie_en
+    varchar pytanie_uk
+    varchar odpowiedz_pl
+    varchar odpowiedz_en
+    varchar odpowiedz_uk
+    decimal szansa_klamstwa
+    int wymaga_dokumentu
+    int zmiana_stresu
+    varchar ustawia_flage FK
+    int priorytet
+    varchar rodzaj_odpowiedzi
+    varchar kodeks_po_odpowiedzi FK
+    varchar anomalia_po_odpowiedzi
+    int min_autorytet
+    varchar zrodlo_funkcji
+  }
+  wydarzenie {
+    varchar id PK
+    varchar rodzaj
+    int id_nocy FK
+    varchar nazwa_pl
+    varchar nazwa_en
+    varchar nazwa_uk
+    varchar tekst_pl
+    varchar tekst_en
+    varchar tekst_uk
+  }
+  wybor_wydarzenia {
+    varchar id PK
+    varchar id_wydarzenia FK
+    varchar tekst_pl
+    varchar tekst_en
+    varchar tekst_uk
+    int zmiana_stresu
+    varchar ustawia_flage FK
+  }
+  wpis_kodeksu {
+    varchar id PK
+    varchar kategoria
+    varchar tytul_pl
+    varchar tytul_en
+    varchar tytul_uk
+    varchar tekst_pl
+    varchar tekst_en
+    varchar tekst_uk
+    varchar flaga_odblokowania FK
+    varchar warunek_odblokowania
+  }
+  osiagniecie {
+    varchar id PK
+    varchar nazwa_pl
+    varchar nazwa_en
+    varchar nazwa_uk
+    varchar opis_pl
+    varchar opis_en
+    varchar opis_uk
+    int sekretne
+    varchar flaga_odblokowania FK
+    varchar warunek_odblokowania
+  }
+  zakonczenie {
+    varchar id PK
+    varchar tytul_pl
+    varchar tytul_en
+    varchar tytul_uk
+    varchar opis_pl
+  }
+  warunek_zakonczenia {
+    varchar id PK
+    varchar id_zakonczenia FK
+    varchar id_flagi FK
+    int wymagana_wartosc
+  }
+  akt |o--o{ noc : "obejmuje"
+  noc ||--o{ pasazer_w_nocy : "planuje"
+  pasazer ||--o{ pasazer_w_nocy : "występuje"
+  noc |o--o{ typ_dokumentu : "odblokowuje"
+  pasazer |o--o{ dokument_pasazera : "posiada"
+  typ_dokumentu |o--o{ dokument_pasazera : "określa typ"
+  pasazer |o--o{ rejestr : "opisuje"
+  pasazer |o--o{ pytanie_dialogowe : "dotyczy"
+  flaga |o--o{ pytanie_dialogowe : "ustawia"
+  wpis_kodeksu |o--o{ pytanie_dialogowe : "odblokowuje"
+  noc |o--o{ wydarzenie : "zdarza się"
+  wydarzenie |o--o{ wybor_wydarzenia : "ma wybory"
+  flaga |o--o{ wybor_wydarzenia : "ustawia"
+  flaga |o--o{ wpis_kodeksu : "odblokowuje"
+  flaga |o--o{ osiagniecie : "odblokowuje"
+  zakonczenie |o--o{ warunek_zakonczenia : "wymaga"
+  flaga |o--o{ warunek_zakonczenia : "sprawdza"

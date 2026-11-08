@@ -1,0 +1,18 @@
+@page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+body { font-family: Inter, "Segoe UI", Arial, sans-serif; font-size: 10.5pt; line-height: 1.45; color: #2C2C2A; }
+h1 { font-size: 22pt; margin: 0 0 6pt; }
+h2 { font-size: 15pt; margin-top: 22pt; border-bottom: 1px solid #D3D1C7; padding-bottom: 3pt; page-break-after: avoid; }
+h3 { font-size: 12.5pt; margin-top: 16pt; page-break-after: avoid; }
+h4 { font-size: 11pt; margin: 12pt 0 4pt; page-break-after: avoid; }
+table { border-collapse: collapse; width: 100%; margin: 6pt 0 10pt; font-size: 9pt; page-break-inside: auto; }
+th { background: #F1EFE8; text-align: left; }
+th, td { border: 1px solid #D3D1C7; padding: 3pt 5pt; vertical-align: top; }
+tr { page-break-inside: avoid; }
+code { font-family: "DejaVu Sans Mono", monospace; font-size: 8.5pt; background: #F5F4EF; padding: 0 2px; }
+img { max-width: 100%; max-height: 235mm; display: block; margin: 6pt auto; page-break-inside: avoid; }
+p img { margin-top: 4pt; }
+hr { border: 0; border-top: 1px solid #D3D1C7; }
+table { table-layout: auto; }
+colgroup col { width: auto !important; }
+td:first-child { white-space: nowrap; }
+figcaption { text-align: center; font-size: 9pt; color: #5F5E5A; margin-bottom: 8pt; }
